@@ -22,6 +22,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
+app.get("/",async(req,res)=>{
+  return res.status(200).json('Responding....!!!!')
+})
+
 app.listen(9000,()=>{
   console.log("Server Started at port 9000")
 })
