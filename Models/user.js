@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema(
 
     bankAccount: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "BankAccount", 
+      ref: "bankaccount", 
     },
 
     addedBy: {
