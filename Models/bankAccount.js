@@ -8,35 +8,29 @@ const bankAccountSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
-
     accountNo: {
       type: Number,
       required: true,
       unique: true,
     },
-
     bankName: {
       type: String,
       required: true,
       trim: true,
     },
-
     branchName: {
       type: String,
       trim: true,
     },
-
     accountHolderName: {
       type: String,
       required: true,
       trim: true,
     },
-
     addedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
     },
-
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",

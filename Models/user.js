@@ -7,7 +7,6 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
     email: {
       type: String,
       required: true,
@@ -15,52 +14,42 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-
     isEmailVerified: {
       type: Boolean,
       default: false,
     },
-
     displayName: {
       type: String,
       trim: true,
     },
-
     password: {
       type: String,
       required: true,
     },
-
     profileURL: {
       type: String,
     },
-
     rollNo: {
       type: String,
       required: true,
     },
-
     phoneNo: {
       type: Number,
       required: true,
     },
-
     orgName: {
       type: String,
       required: true,
     },
-
     branch: {
       type: String,
       required: true,
     },
-
     userType: {
       type: String,
       enum: ["superAdmin", "orgAdmin", "branchaAdmin", "user"], 
       default: "user",
     },
-
     bankAccount: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "bankaccount", 
