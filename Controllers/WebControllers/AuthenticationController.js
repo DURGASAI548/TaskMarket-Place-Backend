@@ -5,7 +5,7 @@ const Login = async (req, res, next) => {
     res.cookie("token", "TestingCookie", {
         httpOnly: true,
         secure: true,
-        sameSite: "none"
+        sameSite: "None"
     });
     return res.status(200).json("Login API")
 }
