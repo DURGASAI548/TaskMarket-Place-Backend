@@ -28,6 +28,7 @@ const userSchema = new mongoose.Schema(
     },
     profileURL: {
       type: String,
+      default:null
     },
     rollNo: {
       type: String,

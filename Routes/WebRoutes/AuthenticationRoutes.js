@@ -4,6 +4,6 @@ const AuthenticationController = require("../../Controllers/WebControllers/Authe
 // const VerifyToken = require('../../ExternalSource/Jwtcontroller');
 
 
-router.get('/login', AuthenticationController.Login)
+router.post('/login', AuthenticationController.Login)
 
 module.exports = router;
