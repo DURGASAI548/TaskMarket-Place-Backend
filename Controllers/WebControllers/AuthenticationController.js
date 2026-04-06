@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const UserSchema = require("../../Models/user")
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 
 const generateToken = (user) => {
     return jwt.sign(
