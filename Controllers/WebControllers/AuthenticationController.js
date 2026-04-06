@@ -1,6 +1,11 @@
 const mongoose = require('mongoose')
 
-const Login = async(req , res , next) => {
+const Login = async (req, res, next) => {
+    res.cookie("token", "TestingCookie", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "None"
+    });
     return res.status(200).json("Login API")
 }
 
