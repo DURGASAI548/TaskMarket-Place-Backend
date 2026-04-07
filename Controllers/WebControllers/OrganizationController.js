@@ -340,7 +340,6 @@ const GetOrganizationById = async (req, res) => {
 };
 
 
-
 const DeleteOrganization = async (req, res) => {
   try {
     const userId = req.user.id;
