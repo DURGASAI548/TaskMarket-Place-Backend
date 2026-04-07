@@ -285,9 +285,62 @@ const UpdateOrganization = async (req, res) => {
   }
 };
 
+const GetOrganizationById = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { orgId } = req.params;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        message: "Organization ID is required",
+      });
+    }
+
+    const user = await UserSchema.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const organization = await OrganizationSchema.findById(orgId);
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+
+    if (
+      user.userType !== "superAdmin" &&
+      organization.orgAdminUser.toString() !== userId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: organization,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching organization",
+      error: error.message,
+    });
+  }
+};
 
 
 exports.AddOrganization = AddOrganization
 exports.GetOrganizations = GetOrganizations
 exports.UpdateOrganization = UpdateOrganization
+exports.GetOrganizationById = GetOrganizationById
 
