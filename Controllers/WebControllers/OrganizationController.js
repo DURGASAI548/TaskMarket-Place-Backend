@@ -104,30 +104,63 @@ const GetOrganizations = async (req, res) => {
       });
     }
 
-    let organizations;
+    let matchCondition = {};
 
     if (user.userType === "superAdmin") {
-      organizations = await OrganizationSchema.find()
-        .populate("orgAdminUser", "name email")
-        .populate("addedBy", "name")
-        .populate("updatedBy", "name");
-    }
-
-    else if (user.userType === "orgAdmin") {
-      organizations = await OrganizationSchema.find({
-        orgAdminUser: userId,
-      })
-        .populate("orgAdminUser", "name email")
-        .populate("addedBy", "name")
-        .populate("updatedBy", "name");
-    }
-
-    else {
+      matchCondition = {}; // all orgs
+    } else if (user.userType === "orgAdmin") {
+      matchCondition = { orgAdminUser: userId };
+    } else {
       return res.status(403).json({
         success: false,
         message: "Access denied",
       });
     }
+
+    const organizations = await OrganizationSchema.aggregate([
+      { $match: matchCondition },
+
+      {
+        $lookup: {
+          from: "branches", 
+          localField: "_id",
+          foreignField: "org",
+          as: "branches",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "org",
+          as: "users",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "tasks",
+          localField: "_id",
+          foreignField: "orgScope",
+          as: "tasks",
+        },
+      },
+      {
+        $addFields: {
+          branchCount: { $size: "$branches" },
+          userCount: { $size: "$users" },
+          taskCount: { $size: "$tasks" },
+        },
+      },
+      {
+        $project: {
+          branches: 0,
+          users: 0,
+          tasks: 0,
+        },
+      },
+    ]);
 
     return res.status(200).json({
       success: true,
@@ -144,7 +177,117 @@ const GetOrganizations = async (req, res) => {
   }
 };
 
+const UpdateOrganization = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { orgId } = req.params;
+
+    const { orgName, orgDescription, orgAdminUser } = req.body;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        message: "Organization ID is required",
+      });
+    }
+
+    const user = await UserSchema.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const organization = await OrganizationSchema.findById(orgId);
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+
+    if (
+      user.userType !== "superAdmin" &&
+      organization.orgAdminUser.toString() !== userId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to edit this organization",
+      });
+    }
+
+    if (orgName) {
+      const existingOrg = await OrganizationSchema.findOne({
+        _id: { $ne: orgId },
+        orgName: { $regex: `^${orgName}$`, $options: "i" },
+      });
+
+      if (existingOrg) {
+        return res.status(400).json({
+          success: false,
+          message: "Organization name already exists",
+        });
+      }
+
+      organization.orgName = orgName;
+    }
+
+    if (orgDescription !== undefined) {
+      organization.orgDescription = orgDescription;
+    }
+
+    if (orgAdminUser && orgAdminUser !== organization.orgAdminUser.toString()) {
+      const oldAdminId = organization.orgAdminUser;
+      const newAdminId = orgAdminUser;
+
+      const newAdmin = await UserSchema.findById(newAdminId);
+      if (!newAdmin) {
+        return res.status(404).json({
+          success: false,
+          message: "New admin user not found",
+        });
+      }
+
+      organization.orgAdminUser = newAdminId;
+
+      await UserSchema.findByIdAndUpdate(newAdminId, {
+        userType: "orgAdmin",
+      });
+
+      const stillAdmin = await OrganizationSchema.findOne({
+        orgAdminUser: oldAdminId,
+      });
+
+      if (!stillAdmin) {
+        await UserSchema.findByIdAndUpdate(oldAdminId, {
+          userType: "user",
+        });
+      }
+    }
+
+    organization.updatedBy = userId;
+
+    await organization.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Organization updated successfully",
+      data: organization,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error updating organization",
+      error: error.message,
+    });
+  }
+};
+
+
 
 exports.AddOrganization = AddOrganization
 exports.GetOrganizations = GetOrganizations
+exports.UpdateOrganization = UpdateOrganization
 

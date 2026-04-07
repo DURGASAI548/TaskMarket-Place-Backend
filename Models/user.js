@@ -38,13 +38,13 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    orgName: {
-      type: String,
-      required: true,
+    org: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "organization",
     },
     branch: {
-      type: String,
-      required: true,
+     type: mongoose.Schema.Types.ObjectId,
+      ref: "branch",
     },
     userType: {
       type: String,
