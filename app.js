@@ -10,6 +10,7 @@ const cors = require("cors");
 const app = express();
 
 const AuthenticationRoutes = require('./Routes/WebRoutes/AuthenticationRoutes');
+const UserRoutes = require("./Routes/WebRoutes/UserRoutes")
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
@@ -44,6 +45,7 @@ app.use(cors({
 
 
 app.use('/api', AuthenticationRoutes);
+app.use('/api', UserRoutes);
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
