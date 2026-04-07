@@ -3,7 +3,7 @@ const UserSchema = require("../../Models/user")
 
 const GetNormalUsers = async (req, res) => {
     try {
-        const users = await User.find({ userType: "user" })
+        const users = await UserSchema.find({ userType: "user" })
             .select("name displayName email phoneNo profileURL"); 
 
         return res.status(200).json({
