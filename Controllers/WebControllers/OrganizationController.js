@@ -339,9 +339,7 @@ const GetOrganizationById = async (req, res) => {
   }
 };
 
-const OrganizationSchema = require("../models/organization");
-const UserSchema = require("../models/user");
-const BranchSchema = require("../models/branch");
+
 
 const DeleteOrganization = async (req, res) => {
   try {
