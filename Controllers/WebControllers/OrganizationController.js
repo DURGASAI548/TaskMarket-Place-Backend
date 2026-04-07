@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const OrganizationSchema = require("../../Models/organization")
 const UserSchema = require("../../Models/user")
+const BranchSchema = require("../../Models/branch")
 
 const AddOrganization = async (req, res) => {
   try {
@@ -338,9 +339,62 @@ const GetOrganizationById = async (req, res) => {
   }
 };
 
+const OrganizationSchema = require("../models/organization");
+const UserSchema = require("../models/user");
+const BranchSchema = require("../models/branch");
+
+const DeleteOrganization = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { orgId } = req.params;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        message: "Organization ID is required",
+      });
+    }
+
+    const organization = await OrganizationSchema.findById(orgId);
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+
+    if (organization.addedBy.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only organization creator can delete",
+      });
+    }
+
+    await BranchSchema.deleteMany({ org: orgId });
+
+    await UserSchema.deleteMany({ org: orgId });
+
+    await OrganizationSchema.findByIdAndDelete(orgId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Organization and related data deleted successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting organization",
+      error: error.message,
+    });
+  }
+};
+
 
 exports.AddOrganization = AddOrganization
 exports.GetOrganizations = GetOrganizations
 exports.UpdateOrganization = UpdateOrganization
 exports.GetOrganizationById = GetOrganizationById
+exports.DeleteOrganization = DeleteOrganization
 

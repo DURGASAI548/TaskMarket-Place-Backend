@@ -7,5 +7,6 @@ router.post('/add-organization', VerifyToken, OrganizationController.AddOrganiza
 router.get('/get-organizations', VerifyToken, OrganizationController.GetOrganizations)
 router.put('/edit-organizations/:orgId', VerifyToken, OrganizationController.UpdateOrganization)
 router.get('/get-organization-id/:orgId', VerifyToken, OrganizationController.GetOrganizationById)
+router.delete('/delete-organization/:orgId', VerifyToken, OrganizationController.DeleteOrganization)
 
 module.exports = router;
