@@ -69,14 +69,14 @@ const AddOrganization = async (req, res) => {
         {userType : "orgAdmin"},
         {new : true}
     )
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Organization created successfully",
       data: newOrg,
     });
   } catch (error) {
     console.log(error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Error creating organization",
       error: error.message,
