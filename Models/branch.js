@@ -20,6 +20,11 @@ const branchSchema = new mongoose.Schema(
       required: true,
     },
 
+    branchDescription: {
+      type: String,
+      trim: true,
+    },
+
     addedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",

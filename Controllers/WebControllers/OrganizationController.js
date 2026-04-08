@@ -339,7 +339,6 @@ const GetOrganizationById = async (req, res) => {
   }
 };
 
-
 const DeleteOrganization = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -423,10 +422,68 @@ const DeleteOrganization = async (req, res) => {
   }
 };
 
+const GetOrganizationList = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await UserSchema.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    let organizations;
+
+    if (user.userType === "superAdmin") {
+      organizations = await OrganizationSchema.find()
+        .select("_id orgName");
+    }
+
+    else if (user.userType === "orgAdmin") {
+      organizations = await OrganizationSchema.find({
+        orgAdminUser: userId,
+      }).select("_id orgName");
+    }
+
+    else {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: organizations.length,
+      data: organizations,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching organizations",
+      error: error.message,
+    });
+  }
+};
+
+
 
 exports.AddOrganization = AddOrganization
 exports.GetOrganizations = GetOrganizations
 exports.UpdateOrganization = UpdateOrganization
 exports.GetOrganizationById = GetOrganizationById
 exports.DeleteOrganization = DeleteOrganization
+exports.GetOrganizationList = GetOrganizationList
+
 

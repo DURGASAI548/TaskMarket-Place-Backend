@@ -5,6 +5,7 @@ const VerifyToken = require('../../ExternalSources/JwtController');
 
 router.post('/add-organization', VerifyToken, OrganizationController.AddOrganization)
 router.get('/get-organizations', VerifyToken, OrganizationController.GetOrganizations)
+router.get('/get-organizations-list', VerifyToken, OrganizationController.GetOrganizationList)
 router.put('/edit-organizations/:orgId', VerifyToken, OrganizationController.UpdateOrganization)
 router.get('/get-organization-id/:orgId', VerifyToken, OrganizationController.GetOrganizationById)
 router.delete('/delete-organization/:orgId', VerifyToken, OrganizationController.DeleteOrganization)
