@@ -105,17 +105,14 @@ const GetBranches = async (req, res) => {
     let matchCondition = {};
 
     if (user.userType === "superAdmin") {
-      matchCondition = {}; 
-    }
-
+      matchCondition = {};
+    } 
     else if (user.userType === "orgAdmin") {
-      matchCondition = { org: user.org }; // orgAdmin's org
-    }
-
+      matchCondition = { org: user.org };
+    } 
     else if (user.userType === "branchaAdmin") {
       matchCondition = { branchAdmin: userId };
-    }
-
+    } 
     else {
       return res.status(403).json({
         success: false,
@@ -125,6 +122,31 @@ const GetBranches = async (req, res) => {
 
     const branches = await BranchSchema.aggregate([
       { $match: matchCondition },
+
+      {
+        $lookup: {
+          from: "organizations",
+          localField: "org",
+          foreignField: "_id",
+          as: "organization",
+        },
+      },
+      { $unwind: "$organization" },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "branchAdmin",
+          foreignField: "_id",
+          as: "admin",
+        },
+      },
+      {
+        $unwind: {
+          path: "$admin",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
 
       {
         $lookup: {
@@ -139,13 +161,16 @@ const GetBranches = async (req, res) => {
         $lookup: {
           from: "tasks",
           localField: "_id",
-          foreignField: "branchScope",
+          foreignField: "branch",
           as: "tasks",
         },
       },
 
       {
         $addFields: {
+          orgName: "$organization.orgName",
+          adminName: "$admin.name",
+          adminProfileURL: "$admin.profileURL",
           userCount: { $size: "$users" },
           taskCount: { $size: "$tasks" },
         },
@@ -153,8 +178,16 @@ const GetBranches = async (req, res) => {
 
       {
         $project: {
-          users: 0,
-          tasks: 0,
+          _id: 1,
+          branchName: 1,
+          org: 1,
+          orgName: 1,
+          branchAdmin: 1,
+          adminName: 1,
+          adminProfileURL: 1,
+          userCount: 1,
+          taskCount: 1,
+          createdAt: 1,
         },
       },
     ]);
