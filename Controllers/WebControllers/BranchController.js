@@ -111,7 +111,7 @@ const GetBranches = async (req, res) => {
       matchCondition = { org: user.org };
     } 
     else if (user.userType === "branchaAdmin") {
-      matchCondition = { branchAdmin: userId };
+      matchCondition = { branchAdminUser: userId }; 
     } 
     else {
       return res.status(403).json({
@@ -131,12 +131,17 @@ const GetBranches = async (req, res) => {
           as: "organization",
         },
       },
-      { $unwind: "$organization" },
+      {
+        $unwind: {
+          path: "$organization",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
 
       {
         $lookup: {
           from: "users",
-          localField: "branchAdmin",
+          localField: "branchAdminUser", 
           foreignField: "_id",
           as: "admin",
         },
@@ -161,7 +166,7 @@ const GetBranches = async (req, res) => {
         $lookup: {
           from: "tasks",
           localField: "_id",
-          foreignField: "branch",
+          foreignField: "branchScope", 
           as: "tasks",
         },
       },
@@ -169,8 +174,8 @@ const GetBranches = async (req, res) => {
       {
         $addFields: {
           orgName: "$organization.orgName",
-          adminName: "$admin.name",
-          adminProfileURL: "$admin.profileURL",
+          adminName: { $ifNull: ["$admin.name", null] },
+          adminProfileURL: { $ifNull: ["$admin.profileURL", null] },
           userCount: { $size: "$users" },
           taskCount: { $size: "$tasks" },
         },
@@ -182,7 +187,7 @@ const GetBranches = async (req, res) => {
           branchName: 1,
           org: 1,
           orgName: 1,
-          branchAdmin: 1,
+          branchAdminUser: 1, 
           adminName: 1,
           adminProfileURL: 1,
           userCount: 1,
