@@ -89,4 +89,91 @@ const AddBranch = async (req, res) => {
   }
 };
 
+const GetBranches = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await UserSchema.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    let matchCondition = {};
+
+    if (user.userType === "superAdmin") {
+      matchCondition = {}; 
+    }
+
+    else if (user.userType === "orgAdmin") {
+      matchCondition = { org: user.org }; // orgAdmin's org
+    }
+
+    else if (user.userType === "branchaAdmin") {
+      matchCondition = { branchAdmin: userId };
+    }
+
+    else {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    const branches = await BranchSchema.aggregate([
+      { $match: matchCondition },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "branch",
+          as: "users",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "tasks",
+          localField: "_id",
+          foreignField: "branchScope",
+          as: "tasks",
+        },
+      },
+
+      {
+        $addFields: {
+          userCount: { $size: "$users" },
+          taskCount: { $size: "$tasks" },
+        },
+      },
+
+      {
+        $project: {
+          users: 0,
+          tasks: 0,
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: branches.length,
+      data: branches,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching branches",
+      error: error.message,
+    });
+  }
+};
+
+
 exports.AddBranch = AddBranch
+exports.GetBranches = GetBranches

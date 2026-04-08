@@ -4,6 +4,7 @@ const BranchController = require("../../Controllers/WebControllers/BranchControl
 const VerifyToken = require('../../ExternalSources/JwtController');
 
 router.post('/add-branch', VerifyToken, BranchController.AddBranch)
+router.get('/get-branches', VerifyToken, BranchController.GetBranches)
 
 
 module.exports = router;
