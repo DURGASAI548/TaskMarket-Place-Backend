@@ -62,7 +62,7 @@ const AddBranch = async (req, res) => {
     const newBranch = await BranchSchema.create({
       branchName,
       org: orgId,
-      branchAdmin: branchAdmin || null,
+      branchAdminUser: branchAdmin || null,
       branchDescription,
       addedBy: userId,
       updatedBy: userId,
