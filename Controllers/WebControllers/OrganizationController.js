@@ -368,15 +368,50 @@ const DeleteOrganization = async (req, res) => {
       });
     }
 
+    const orgAdminId = organization.orgAdminUser;
+
+    const branches = await BranchSchema.find({ org: orgId });
+    const branchAdminIds = branches.map(b => b.branchAdmin).filter(Boolean);
+
     await BranchSchema.deleteMany({ org: orgId });
 
     await UserSchema.deleteMany({ org: orgId });
 
     await OrganizationSchema.findByIdAndDelete(orgId);
 
+    
+
+    if (orgAdminId) {
+      const stillOrgAdmin = await OrganizationSchema.findOne({
+        orgAdminUser: orgAdminId,
+      });
+
+      if (!stillOrgAdmin) {
+        await UserSchema.findByIdAndUpdate(orgAdminId, {
+          userType: "user",
+        });
+      }
+    }
+
+    const uniqueBranchAdmins = [...new Set(branchAdminIds)];
+
+    for (let adminId of uniqueBranchAdmins) {
+      const stillBranchAdmin = await BranchSchema.findOne({
+        branchAdmin: adminId,
+      });
+
+      if (!stillBranchAdmin) {
+        await UserSchema.findByIdAndUpdate(adminId, {
+          userType: "user",
+        });
+      }
+    }
+
+
     return res.status(200).json({
       success: true,
-      message: "Organization and related data deleted successfully",
+      message:
+        "Organization, branches, users deleted and roles updated successfully",
     });
   } catch (error) {
     console.log(error);
