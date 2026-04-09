@@ -5,6 +5,7 @@ const VerifyToken = require('../../ExternalSources/JwtController');
 
 router.post('/add-branch', VerifyToken, BranchController.AddBranch)
 router.get('/get-branches', VerifyToken, BranchController.GetBranches)
+router.post('/edit-branches/:branchId', VerifyToken, BranchController.UpdateBranch)
 
 
 module.exports = router;
