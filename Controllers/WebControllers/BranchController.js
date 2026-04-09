@@ -217,7 +217,7 @@ const UpdateBranch = async (req, res) => {
     const userId = req.user.id;
     const { branchId } = req.params;
 
-    const { branchName, branchDescription, branchAdminUser } = req.body;
+    const { branchName, branchDescription, orgId, branchAdminUser } = req.body;
 
     if (!branchId) {
       return res.status(400).json({
@@ -267,6 +267,7 @@ const UpdateBranch = async (req, res) => {
       }
 
       branch.branchName = branchName;
+      
     }
 
     if (branchDescription !== undefined) {
