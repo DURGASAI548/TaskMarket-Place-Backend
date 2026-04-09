@@ -7,6 +7,7 @@ router.post('/add-branch', VerifyToken, BranchController.AddBranch)
 router.get('/get-branches', VerifyToken, BranchController.GetBranches)
 router.post('/edit-branches/:branchId', VerifyToken, BranchController.UpdateBranch)
 router.get('/get-branch/:branchId', VerifyToken, BranchController.GetBranchById)
+router.delete('/delete-branch/:branchId', VerifyToken, BranchController.DeleteBranch)
 
 
 module.exports = router;

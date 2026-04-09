@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const UserSchema = require("../../Models/user")
 const BranchSchema = require('../../Models/branch')
 const OrganizationSchema = require("../../Models/organization")
+const TaskSchema = require("../../Models/task")
 
 const AddBranch = async (req, res) => {
   try {
@@ -217,7 +218,7 @@ const UpdateBranch = async (req, res) => {
     const userId = req.user.id;
     const { branchId } = req.params;
 
-    const { branchName, branchDescription, orgId, branchAdminUser } = req.body;
+    const { branchName, branchDescription, branchAdminUser, org } = req.body;
 
     if (!branchId) {
       return res.status(400).json({
@@ -252,6 +253,25 @@ const UpdateBranch = async (req, res) => {
       });
     }
 
+    if (org && org !== branch.org.toString()) {
+      const newOrg = await OrganizationSchema.findById(org);
+
+      if (!newOrg) {
+        return res.status(404).json({
+          success: false,
+          message: "New organization not found",
+        });
+      }
+
+      branch.org = org;
+
+      if (branch.addedBy) {
+        await UserSchema.findByIdAndUpdate(branch.addedBy, {
+          org: org,
+          userType: "orgAdmin",
+        });
+      }
+    }
     if (branchName) {
       const existingBranch = await BranchSchema.findOne({
         _id: { $ne: branchId },
@@ -267,9 +287,7 @@ const UpdateBranch = async (req, res) => {
       }
 
       branch.branchName = branchName;
-      
     }
-
     if (branchDescription !== undefined) {
       branch.branchDescription = branchDescription;
     }
@@ -285,7 +303,7 @@ const UpdateBranch = async (req, res) => {
       if (!newAdmin) {
         return res.status(404).json({
           success: false,
-          message: "New admin user not found",
+          message: "New admin not found",
         });
       }
 
@@ -293,15 +311,18 @@ const UpdateBranch = async (req, res) => {
 
       await UserSchema.findByIdAndUpdate(newAdminId, {
         userType: "branchaAdmin",
+        branch: branchId,
+        org: branch.org,
       });
 
-      const stillBranchAdmin = await BranchSchema.findOne({
+      const stillAdmin = await BranchSchema.findOne({
         branchAdminUser: oldAdminId,
       });
 
-      if (!stillBranchAdmin) {
+      if (!stillAdmin) {
         await UserSchema.findByIdAndUpdate(oldAdminId, {
           userType: "user",
+          branch: null,
         });
       }
     }
@@ -382,8 +403,67 @@ const GetBranchById = async (req, res) => {
   }
 };
 
+const DeleteBranch = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { branchId } = req.params;
+
+    if (!branchId) {
+      return res.status(400).json({
+        success: false,
+        message: "Branch ID is required",
+      });
+    }
+
+    const user = await UserSchema.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const branch = await BranchSchema.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    if (
+      user.userType !== "superAdmin" &&
+      branch.addedBy?.toString() !== userId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to delete this branch",
+      });
+    }
+
+    await UserSchema.deleteMany({ branch: branchId });
+
+    await TaskSchema.deleteMany({ branchScope: branchId });
+
+    await BranchSchema.findByIdAndDelete(branchId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Branch, users, and tasks deleted successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting branch",
+      error: error.message,
+    });
+  }
+};
+
 
 exports.AddBranch = AddBranch
 exports.GetBranches = GetBranches
 exports.UpdateBranch = UpdateBranch
 exports.GetBranchById = GetBranchById
+exports.DeleteBranch = DeleteBranch

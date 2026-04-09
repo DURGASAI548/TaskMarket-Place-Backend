@@ -5,7 +5,6 @@ const GetNormalUsers = async (req, res) => {
     try {
         const users = await UserSchema.find({ userType: "user" })
             .select("name displayName email phoneNo profileURL"); 
-
         return res.status(200).json({
             success: true,
             count: users.length,
