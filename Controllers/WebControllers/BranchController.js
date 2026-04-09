@@ -324,7 +324,65 @@ const UpdateBranch = async (req, res) => {
   }
 };
 
+const GetBranchById = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { branchId } = req.params;
+
+    if (!branchId) {
+      return res.status(400).json({
+        success: false,
+        message: "Branch ID is required",
+      });
+    }
+
+    const user = await UserSchema.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const branch = await BranchSchema.findById(branchId);
+
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    const isSuperAdmin = user.userType === "superAdmin";
+    const isBranchAdmin =
+      branch.branchAdminUser?.toString() === userId;
+    const isOrgAdmin =
+      user.userType === "orgAdmin" &&
+      user.org?.toString() === branch.org.toString();
+
+    if (!isSuperAdmin && !isOrgAdmin && !isBranchAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: branch,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching branch",
+      error: error.message,
+    });
+  }
+};
+
 
 exports.AddBranch = AddBranch
 exports.GetBranches = GetBranches
 exports.UpdateBranch = UpdateBranch
+exports.GetBranchById = GetBranchById
