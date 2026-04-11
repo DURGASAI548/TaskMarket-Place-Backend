@@ -441,15 +441,34 @@ const DeleteBranch = async (req, res) => {
       });
     }
 
+    const branchAdminId = branch.branchAdminUser;
+
     await UserSchema.deleteMany({ branch: branchId });
 
     await TaskSchema.deleteMany({ branchScope: branchId });
 
     await BranchSchema.findByIdAndDelete(branchId);
 
+   
+
+    if (branchAdminId) {
+      const stillAdmin = await BranchSchema.findOne({
+        branchAdminUser: branchAdminId,
+      });
+
+      if (!stillAdmin) {
+        await UserSchema.findByIdAndUpdate(branchAdminId, {
+          userType: "user",
+          branch: null,
+        });
+      }
+    }
+
+
     return res.status(200).json({
       success: true,
-      message: "Branch, users, and tasks deleted successfully",
+      message:
+        "Branch, users, tasks deleted and admin role updated successfully",
     });
   } catch (error) {
     console.log(error);
