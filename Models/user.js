@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: null,
+      default: null,
     },
     profileURL: {
       type: String,

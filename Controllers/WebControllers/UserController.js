@@ -90,7 +90,7 @@ const AddUser = async (req, res) => {
             }
         }
 
-        else if (loggedUser.userType === "branchaAdmin") {
+        else if (loggedUser.userType === "branchAdmin") {
             if (
                 loggedUser.org?.toString() !== org ||
                 loggedUser.branch?.toString() !== branch
@@ -172,5 +172,90 @@ const AddUser = async (req, res) => {
     }
 };
 
+const GetUsers = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const loggedUser = await UserSchema.findById(userId);
+
+    if (!loggedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Logged-in user not found",
+      });
+    }
+
+    let filter = {};
+
+    if (loggedUser.userType === "superAdmin") {
+      filter = {};
+    } 
+    
+    else if (loggedUser.userType === "orgAdmin") {
+      filter = {
+        org: loggedUser.org,
+      };
+    } 
+    
+    else if (loggedUser.userType === "branchAdmin") {
+      filter = {
+        org: loggedUser.org,
+        branch: loggedUser.branch,
+      };
+    } 
+    
+    else {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    const users = await UserSchema.find(filter)
+      .populate({
+        path: "org",
+        select: "orgName",
+      })
+      .populate({
+        path: "branch",
+        select: "branchName",
+      })
+      .lean();
+
+    const formattedUsers = users.map((user) => ({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      rollNo: user.rollNo,
+      phoneNo: user.phoneNo,
+      displayName: user.displayName,
+      profileURL: user.profileURL,
+      userType: user.userType,
+
+      organizationName: user.org?.orgName || null,
+      branchName: user.branch?.branchName || null,
+
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: formattedUsers.length,
+      data: formattedUsers,
+    });
+
+  } catch (error) {
+    console.log("Get Users Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching users",
+      error: error.message,
+    });
+  }
+};
+
+
 exports.GetNormalUsers = GetNormalUsers;
 exports.AddUser = AddUser;
+exports.GetUsers = GetUsers;
