@@ -137,6 +137,7 @@ const AddUser = async (req, res) => {
         let profileURL = null;
 
         if (req.file) {
+            console.log(req.file)
             profileURL = req.file.key;
         }
         const newUser = await UserSchema.create({
