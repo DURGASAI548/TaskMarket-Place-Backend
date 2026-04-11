@@ -477,6 +477,112 @@ const GetOrganizationList = async (req, res) => {
   }
 };
 
+const GetOrgWithBranches = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await UserSchema.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    let organizations = [];
+
+    if (user.userType === "superAdmin") {
+      const orgs = await OrganizationSchema.find().select("_id orgName");
+
+      for (let org of orgs) {
+        const branches = await BranchSchema.find({ org: org._id })
+          .select("_id branchName");
+
+        organizations.push({
+          organizationName: org.orgName,
+          organizationId: org._id,
+          branchesEligible: branches.map((b) => ({
+            branchName: b.branchName,
+            branchId: b._id,
+          })),
+        });
+      }
+    }
+
+    else if (user.userType === "orgAdmin") {
+      const org = await OrganizationSchema.findOne({
+        orgAdminUser: userId,
+      }).select("_id orgName");
+
+      if (!org) {
+        return res.status(404).json({
+          success: false,
+          message: "Organization not found for this admin",
+        });
+      }
+
+      const branches = await BranchSchema.find({ org: org._id })
+        .select("_id branchName");
+
+      organizations.push({
+        organizationName: org.orgName,
+        organizationId: org._id,
+        branchesEligible: branches.map((b) => ({
+          branchName: b.branchName,
+          branchId: b._id,
+        })),
+      });
+    }
+
+    else if (user.userType === "branchaAdmin") {
+      const branch = await BranchSchema.findOne({
+        branchAdminUser: userId,
+      });
+
+      if (!branch) {
+        return res.status(404).json({
+          success: false,
+          message: "Branch not found for this admin",
+        });
+      }
+
+      const org = await OrganizationSchema.findById(branch.org)
+        .select("_id orgName");
+
+      organizations.push({
+        organizationName: org.orgName,
+        organizationId: org._id,
+        branchesEligible: [
+          {
+            branchName: branch.branchName,
+            branchId: branch._id,
+          },
+        ],
+      });
+    }
+
+    else {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: organizations,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching data",
+      error: error.message,
+    });
+  }
+};
+
+
 
 
 exports.AddOrganization = AddOrganization
@@ -485,5 +591,6 @@ exports.UpdateOrganization = UpdateOrganization
 exports.GetOrganizationById = GetOrganizationById
 exports.DeleteOrganization = DeleteOrganization
 exports.GetOrganizationList = GetOrganizationList
+exports.GetOrgWithBranches = GetOrgWithBranches
 
 
