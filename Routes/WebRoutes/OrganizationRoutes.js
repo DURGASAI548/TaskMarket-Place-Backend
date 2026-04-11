@@ -8,6 +8,7 @@ router.get('/get-organizations', VerifyToken, OrganizationController.GetOrganiza
 router.get('/get-organizations-list', VerifyToken, OrganizationController.GetOrganizationList)
 router.put('/edit-organizations/:orgId', VerifyToken, OrganizationController.UpdateOrganization)
 router.get('/get-organization-id/:orgId', VerifyToken, OrganizationController.GetOrganizationById)
+router.get('/get-org-with-branches', VerifyToken, OrganizationController.GetOrgWithBranches)
 router.delete('/delete-organization/:orgId', VerifyToken, OrganizationController.DeleteOrganization)
 
 module.exports = router;
