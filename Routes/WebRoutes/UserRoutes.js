@@ -6,6 +6,6 @@ const {upload} = require("../../ExternalSources/S3Controller")
 // For Org adding
 router.get('/get-normal-users', VerifyToken,UserController.GetNormalUsers)
 router.post('/add-user',upload.single("profile"),VerifyToken,UserController.AddUser);
-router.get('/get-user',VerifyToken,UserController.GetUsers);
+router.get('/get-users',VerifyToken,UserController.GetUsers);
 
 module.exports = router;
