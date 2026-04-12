@@ -203,7 +203,7 @@ const AddUser = async (req, res) => {
     let profileURL = null;
 
     if (req.file) {
-      profileURL = `${process.env.S3_BASE_URL}/${req.file.key}`;
+      profileURL = req.file.key;
     }
 
     const newUser = await UserSchema.create({
