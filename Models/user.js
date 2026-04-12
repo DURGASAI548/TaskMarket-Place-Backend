@@ -41,10 +41,12 @@ const userSchema = new mongoose.Schema(
     org: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "organization",
+      default:null
     },
     branch: {
      type: mongoose.Schema.Types.ObjectId,
       ref: "branch",
+      default:null
     },
     userType: {
       type: String,
