@@ -215,17 +215,19 @@ const GetUsers = async (req, res) => {
     let filter = {};
 
     if (loggedUser.userType === "superAdmin") {
-      filter = {};
+      filter = {userType: { $ne: "superAdmin" }};
     } 
     
     else if (loggedUser.userType === "orgAdmin") {
       filter = {
+        userType: { $ne: "superAdmin" },
         org: loggedUser.org,
       };
     } 
     
     else if (loggedUser.userType === "branchAdmin") {
       filter = {
+        userType: { $ne: "superAdmin" },
         org: loggedUser.org,
         branch: loggedUser.branch,
       };
