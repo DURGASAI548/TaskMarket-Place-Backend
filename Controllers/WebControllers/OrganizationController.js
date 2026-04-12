@@ -5,7 +5,8 @@ const BranchSchema = require("../../Models/branch")
 
 const AddOrganization = async (req, res) => {
   try {
-    const userId = req.user.id
+    const userId = req.user.id;
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -29,20 +30,12 @@ const AddOrganization = async (req, res) => {
       });
     }
 
-    const { orgName, orgDescription, orgAdminUser } = req.body;
+    const { orgName, orgDescription } = req.body;
 
-    if (!orgAdminUser || !orgName || !orgDescription.trim()) {
-      return res.status(404).json({
+    if (!orgName || !orgDescription?.trim()) {
+      return res.status(400).json({
         success: false,
-        message: "All Fields are Required",
-      });
-    }
-    const Adminuser = await UserSchema.findById(orgAdminUser);
-
-    if (!Adminuser) {
-      return res.status(404).json({
-        success: false,
-        message: "Admin User not found",
+        message: "Organization name and description are required",
       });
     }
 
@@ -53,30 +46,26 @@ const AddOrganization = async (req, res) => {
     if (existingOrg) {
       return res.status(400).json({
         success: false,
-        message: "Organization already exists (case-insensitive match)",
+        message: "Organization already exists",
       });
     }
 
     const newOrg = await OrganizationSchema.create({
       orgName,
       orgDescription,
-      orgAdminUser,
+      orgAdminUser:null,
       addedBy: userId,
       updatedBy: userId,
     });
 
-    await UserSchema.findByIdAndUpdate(
-        Adminuser,
-        {userType : "orgAdmin"},
-        {new : true}
-    )
     return res.status(201).json({
       success: true,
       message: "Organization created successfully",
       data: newOrg,
     });
+
   } catch (error) {
-    console.log(error)
+    console.log("Add Org Error:", error);
     return res.status(500).json({
       success: false,
       message: "Error creating organization",
@@ -84,6 +73,7 @@ const AddOrganization = async (req, res) => {
     });
   }
 };
+
 
 const GetOrganizations = async (req, res) => {
   try {

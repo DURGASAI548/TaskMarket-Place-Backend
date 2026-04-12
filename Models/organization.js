@@ -16,7 +16,7 @@ const organizationSchema = new mongoose.Schema(
     orgAdminUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
-      required: true,
+      default: null,
     },
 
     addedBy: {
