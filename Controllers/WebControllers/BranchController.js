@@ -237,35 +237,73 @@ const UpdateBranch = async (req, res) => {
       });
     }
 
-    if (
-      user.userType !== "superAdmin" &&
-      branch.addedBy?.toString() !== userId
-    ) {
+
+    if (user.userType === "orgAdmin") {
+      if (user.org?.toString() !== branch.org.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only edit branches in your organization",
+        });
+      }
+    }
+
+    else if (user.userType === "branchAdmin") {
+      if (user.branch?.toString() !== branchId) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only edit your branch",
+        });
+      }
+
+      if (branchAdminUser) {
+        return res.status(403).json({
+          success: false,
+          message: "Branch admin cannot change branch admin",
+        });
+      }
+
+      if (org) {
+        return res.status(403).json({
+          success: false,
+          message: "Branch admin cannot change branch organization",
+        });
+      }
+    }
+
+    else if (user.userType !== "superAdmin") {
       return res.status(403).json({
         success: false,
-        message: "You are not allowed to edit this branch",
+        message: "Access denied",
       });
     }
 
-    if (org && org !== branch.org.toString()) {
-      const newOrg = await OrganizationSchema.findById(org);
-
-      if (!newOrg) {
-        return res.status(404).json({
+    if (org) {
+      if (user.userType !== "superAdmin") {
+        return res.status(403).json({
           success: false,
-          message: "New organization not found",
+          message: "Only superAdmin can change branch organization",
         });
       }
 
-      branch.org = org;
+      if (org !== branch.org.toString()) {
+        const newOrg = await OrganizationSchema.findById(org);
 
-      if (branch.addedBy) {
-        await UserSchema.findByIdAndUpdate(branch.addedBy, {
-          org: org,
-          userType: "orgAdmin",
-        });
+        if (!newOrg) {
+          return res.status(404).json({
+            success: false,
+            message: "Organization not found",
+          });
+        }
+
+        branch.org = org;
+
+        await UserSchema.updateMany(
+          { branch: branchId },
+          { org: org }
+        );
       }
     }
+
     if (branchName) {
       const existingBranch = await BranchSchema.findOne({
         _id: { $ne: branchId },
@@ -282,41 +320,55 @@ const UpdateBranch = async (req, res) => {
 
       branch.branchName = branchName;
     }
+
     if (branchDescription !== undefined) {
       branch.branchDescription = branchDescription;
     }
 
     if (
       branchAdminUser &&
-      branchAdminUser !== branch.branchAdminUser.toString()
+      branchAdminUser !== branch.branchAdminUser?.toString()
     ) {
       const oldAdminId = branch.branchAdminUser;
       const newAdminId = branchAdminUser;
 
       const newAdmin = await UserSchema.findById(newAdminId);
+
       if (!newAdmin) {
         return res.status(404).json({
           success: false,
-          message: "New admin not found",
+          message: "New admin user not found",
+        });
+      }
+
+
+      if (newAdmin.userType !== "user") {
+        return res.status(400).json({
+          success: false,
+          message: "Only normal users can be assigned as branch admin",
+        });
+      }
+
+      if (
+        newAdmin.branch?.toString() !== branchId ||
+        newAdmin.org?.toString() !== branch.org.toString()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "User must belong to the same branch and organization",
         });
       }
 
       branch.branchAdminUser = newAdminId;
 
       await UserSchema.findByIdAndUpdate(newAdminId, {
-        userType: "branchaAdmin",
-        branch: branchId,
-        org: branch.org,
+        userType: "branchAdmin",
       });
 
-      const stillAdmin = await BranchSchema.findOne({
-        branchAdminUser: oldAdminId,
-      });
-
-      if (!stillAdmin) {
+      if (oldAdminId) {
         await UserSchema.findByIdAndUpdate(oldAdminId, {
           userType: "user",
-          branch: null,
         });
       }
     }
@@ -330,8 +382,9 @@ const UpdateBranch = async (req, res) => {
       message: "Branch updated successfully",
       data: branch,
     });
+
   } catch (error) {
-    console.log(error);
+    console.log("Update Branch Error:", error);
     return res.status(500).json({
       success: false,
       message: "Error updating branch",
