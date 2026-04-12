@@ -63,7 +63,6 @@ const AddUser = async (req, res) => {
     let branchData = null;
 
     if (loggedUser.userType === "superAdmin") {
-      // ✅ branch optional
       if (branch) {
         branchData = await BranchSchema.findById(branch);
 

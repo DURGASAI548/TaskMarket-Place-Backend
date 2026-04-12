@@ -8,7 +8,7 @@ const AddBranch = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { branchName, orgId, branchAdmin, branchDescription } = req.body;
+    const { branchName, orgId, branchDescription } = req.body;
 
     if (!branchName || !orgId || !branchDescription) {
       return res.status(400).json({
@@ -63,17 +63,11 @@ const AddBranch = async (req, res) => {
     const newBranch = await BranchSchema.create({
       branchName,
       org: orgId,
-      branchAdminUser: branchAdmin || null,
+      branchAdminUser: null,
       branchDescription,
       addedBy: userId,
       updatedBy: userId,
     });
-
-    if (branchAdmin) {
-      await UserSchema.findByIdAndUpdate(branchAdmin, {
-        userType: "branchaAdmin", 
-      });
-    }
 
     return res.status(201).json({
       success: true,
