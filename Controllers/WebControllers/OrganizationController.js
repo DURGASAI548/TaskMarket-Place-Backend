@@ -74,7 +74,6 @@ const AddOrganization = async (req, res) => {
   }
 };
 
-
 const GetOrganizations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -200,11 +199,22 @@ const UpdateOrganization = async (req, res) => {
 
     if (
       user.userType !== "superAdmin" &&
-      organization.orgAdminUser.toString() !== userId
+      organization.orgAdminUser?.toString() !== userId
     ) {
       return res.status(403).json({
         success: false,
         message: "You are not allowed to edit this organization",
+      });
+    }
+
+    if (
+      user.userType === "orgAdmin" &&
+      orgAdminUser &&
+      orgAdminUser !== organization.orgAdminUser?.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Org admin cannot change organization admin",
       });
     }
 
@@ -228,15 +238,28 @@ const UpdateOrganization = async (req, res) => {
       organization.orgDescription = orgDescription;
     }
 
-    if (orgAdminUser && orgAdminUser !== organization.orgAdminUser.toString()) {
+    if (
+      orgAdminUser &&
+      user.userType === "superAdmin" &&
+      orgAdminUser !== organization.orgAdminUser?.toString()
+    ) {
       const oldAdminId = organization.orgAdminUser;
       const newAdminId = orgAdminUser;
 
       const newAdmin = await UserSchema.findById(newAdminId);
+
       if (!newAdmin) {
         return res.status(404).json({
           success: false,
           message: "New admin user not found",
+        });
+      }
+
+      if (newAdmin.org?.toString() !== orgId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "User must belong to the same organization to be assigned as orgAdmin",
         });
       }
 
@@ -246,11 +269,7 @@ const UpdateOrganization = async (req, res) => {
         userType: "orgAdmin",
       });
 
-      const stillAdmin = await OrganizationSchema.findOne({
-        orgAdminUser: oldAdminId,
-      });
-
-      if (!stillAdmin) {
+      if (oldAdminId) {
         await UserSchema.findByIdAndUpdate(oldAdminId, {
           userType: "user",
         });
@@ -266,8 +285,9 @@ const UpdateOrganization = async (req, res) => {
       message: "Organization updated successfully",
       data: organization,
     });
+
   } catch (error) {
-    console.log(error);
+    console.log("Update Org Error:", error);
     return res.status(500).json({
       success: false,
       message: "Error updating organization",
