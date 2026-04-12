@@ -5,21 +5,60 @@ const BranchSchema = require("../../Models/branch")
 
 
 const GetNormalUsers = async (req, res) => {
-    try {
-        const users = await UserSchema.find({ userType: "user" })
-            .select("name displayName email phoneNo profileURL");
-        return res.status(200).json({
-            success: true,
-            count: users.length,
-            data: users,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Error fetching users",
-            error: error.message,
-        });
+  try {
+    const users = await UserSchema.find({ userType: "user" })
+      .select("name displayName email phoneNo profileURL");
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching users",
+      error: error.message,
+    });
+  }
+}
+const GetNormalUsersforBranch = async (req, res) => {
+  try {
+    const { branchId } = req.params; 
+
+    if (!branchId) {
+      return res.status(400).json({
+        success: false,
+        message: "Branch ID is required",
+      });
     }
+
+    const branch = await BranchSchema.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    const users = await UserSchema.find({
+      userType: "user",
+      branch: branchId,
+    }).select("name displayName email phoneNo profileURL");
+
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+
+  } catch (error) {
+    console.log("Get Normal Users Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching users",
+      error: error.message,
+    });
+  }
 }
 
 const AddUser = async (req, res) => {
@@ -215,24 +254,24 @@ const GetUsers = async (req, res) => {
     let filter = {};
 
     if (loggedUser.userType === "superAdmin") {
-      filter = {userType: { $ne: "superAdmin" }};
-    } 
-    
+      filter = { userType: { $ne: "superAdmin" } };
+    }
+
     else if (loggedUser.userType === "orgAdmin") {
       filter = {
         userType: { $ne: "superAdmin" },
         org: loggedUser.org,
       };
-    } 
-    
+    }
+
     else if (loggedUser.userType === "branchAdmin") {
       filter = {
         userType: { $ne: "superAdmin" },
         org: loggedUser.org,
         branch: loggedUser.branch,
       };
-    } 
-    
+    }
+
     else {
       return res.status(403).json({
         success: false,
@@ -285,6 +324,7 @@ const GetUsers = async (req, res) => {
 };
 
 
+exports.GetNormalUsersforBranch = GetNormalUsersforBranch;
 exports.GetNormalUsers = GetNormalUsers;
 exports.AddUser = AddUser;
 exports.GetUsers = GetUsers;

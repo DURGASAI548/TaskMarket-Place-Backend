@@ -171,7 +171,6 @@ const UpdateOrganization = async (req, res) => {
   try {
     const userId = req.user.id;
     const { orgId } = req.params;
-
     const { orgName, orgDescription, orgAdminUser } = req.body;
 
     if (!orgId) {
