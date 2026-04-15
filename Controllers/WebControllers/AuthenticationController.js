@@ -8,8 +8,8 @@ const generateToken = (user) => {
         {
             id: user._id,
             role: user.userType,
-            email:user.email,
-            displayName:user.displayName
+            email: user.email,
+            displayName: user.displayName
         },
         process.env.JWT_SECRET,
         {
@@ -28,7 +28,7 @@ const Login = async (req, res) => {
             });
         }
 
-        
+
         const user = await UserSchema.findOne({
             $or: [{ email: identifier }, { name: identifier }],
         });
@@ -39,7 +39,7 @@ const Login = async (req, res) => {
             });
         }
 
-        
+
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
@@ -48,15 +48,15 @@ const Login = async (req, res) => {
             });
         }
 
-        
+
         const token = generateToken(user);
 
-       
+
         res.cookie("token", token, {
             httpOnly: true,
             secure: true,
             sameSite: "None",
-            maxAge:  5 * 60 * 60 * 1000, 
+            maxAge: 5 * 60 * 60 * 1000,
         });
 
         return res.status(200).json({
@@ -78,26 +78,42 @@ const Login = async (req, res) => {
 };
 
 const Logout = async (req, res) => {
-  try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: true,        
-      sameSite: "None",  
-    });
+    try {
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "None",
+        });
 
-    return res.status(200).json({
-      success: true,
-      message: "Logged out successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Error logging out",
-      error: error.message,
-    });
-  }
+        return res.status(200).json({
+            success: true,
+            message: "Logged out successfully",
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error logging out",
+            error: error.message,
+        });
+    }
 };
 
+const VerifyTokenEachPage = async (req, res) => {
+    const authHeader = req.cookies.token;
+    if (!authHeader) return res.status(401).json({ message: 'Unauthorized' });
+
+    const token = authHeader;
+    console.log(token)
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        console.log(req.user)
+        return res.status(200).json({message:"Valid token"})
+    } catch (err) {
+        return res.status(403).json({ message: 'Invalid token' });
+    }
+}
 
 exports.Login = Login;
 exports.Logout = Logout;
+exports.VerifyTokenEachPage = VerifyTokenEachPage;

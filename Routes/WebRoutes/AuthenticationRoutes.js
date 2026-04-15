@@ -6,5 +6,6 @@ const VerifyToken = require('../../ExternalSources/JwtController');
 
 router.post('/login', AuthenticationController.Login);
 router.get('/logout',VerifyToken,AuthenticationController.Logout);
+router.get('/verify-token',AuthenticationController.VerifyTokenEachPage);
 
 module.exports = router;
