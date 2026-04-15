@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const AuthenticationController = require("../../Controllers/WebControllers/AuthenticationController")
-const VerifyToken = require('../../ExternalSource/jwtController');
+const VerifyToken = require('../../ExternalSource/JwtController');
 
 
 router.post('/login', AuthenticationController.Login);
