@@ -400,6 +400,7 @@ const BulkUploadUsers = async (req, res) => {
 
     for (let row of users) {
       const { name, email, displayName, rollNo, phoneNo } = row;
+      console.log(name, email, displayName, rollNo, phoneNo )
 
       if (!name || !email || !rollNo || !phoneNo) {
         failedCount++;
@@ -467,7 +468,6 @@ const BulkUploadUsers = async (req, res) => {
     });
   }
 };
-
 
 
 exports.GetNormalUsersforBranch = GetNormalUsersforBranch;
