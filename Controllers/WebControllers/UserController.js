@@ -2,6 +2,8 @@ const mongoose = require('mongoose')
 const UserSchema = require("../../Models/user")
 const OrganizationSchema = require("../../Models/organization")
 const BranchSchema = require("../../Models/branch")
+const csv = require("csv-parser");
+const fs = require("fs");
 
 
 const GetNormalUsers = async (req, res) => {
@@ -323,8 +325,153 @@ const GetUsers = async (req, res) => {
   }
 };
 
+const BulkUploadUsers = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { org, branch } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "CSV file is required",
+      });
+    }
+
+    const loggedUser = await UserSchema.findById(userId);
+    if (!loggedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const organization = await OrganizationSchema.findById(org);
+    const branchData = await BranchSchema.findById(branch);
+
+    if (!organization || !branchData) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid org or branch",
+      });
+    }
+
+    if (loggedUser.userType === "superAdmin") {
+    } 
+    else if (loggedUser.userType === "orgAdmin") {
+      if (loggedUser.org.toString() !== org) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only upload users to your organization",
+        });
+      }
+    } 
+    else if (loggedUser.userType === "branchaAdmin") {
+      if (
+        loggedUser.org.toString() !== org ||
+        loggedUser.branch.toString() !== branch
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only upload users to your branch",
+        });
+      }
+    } 
+    else {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    
+    const users = [];
+
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(req.file.path)
+        .pipe(csv())
+        .on("data", (row) => users.push(row))
+        .on("end", resolve)
+        .on("error", reject);
+    });
+
+    let successCount = 0;
+    let failedCount = 0;
+    const failedData = [];
+
+    for (let row of users) {
+      const { name, email, displayName, rollNo, phoneNo } = row;
+
+      if (!name || !email || !rollNo || !phoneNo) {
+        failedCount++;
+        failedData.push({
+          row,
+          reason: "Missing required fields",
+        });
+        continue;
+      }
+
+      const existingUser = await UserSchema.findOne({
+        $or: [{ email }, { rollNo }],
+      });
+
+      if (existingUser) {
+        failedCount++;
+        failedData.push({
+          row,
+          reason:
+            existingUser.email === email
+              ? "Email already exists"
+              : "RollNo already exists",
+        });
+        continue;
+      }
+
+      await UserSchema.create({
+        name,
+        email,
+        displayName,
+        rollNo,
+        phoneNo,
+        org,
+        branch,
+        password: null,
+        isEmailVerified: null,
+        userType: "user",
+        addedBy: userId,
+        updatedBy: userId,
+      });
+
+      successCount++;
+    }
+
+    fs.unlinkSync(req.file.path);
+
+   
+    return res.status(200).json({
+      success: true,
+      message: "Bulk upload completed",
+      stats: {
+        total: users.length,
+        uploaded: successCount,
+        failed: failedCount,
+      },
+      failedData,
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error uploading users",
+      error: error.message,
+    });
+  }
+};
+
+
 
 exports.GetNormalUsersforBranch = GetNormalUsersforBranch;
 exports.GetNormalUsers = GetNormalUsers;
 exports.AddUser = AddUser;
 exports.GetUsers = GetUsers;
+exports.BulkUploadUsers = BulkUploadUsers;
