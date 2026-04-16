@@ -388,7 +388,12 @@ const BulkUploadUsers = async (req, res) => {
 
     await new Promise((resolve, reject) => {
       fs.createReadStream(req.file.path)
-        .pipe(csv())
+        .pipe(
+          csv({
+            mapHeaders: ({ header }) =>
+              header.trim().replace(/^\uFEFF/, "")
+          })
+        )
         .on("data", (row) => users.push(row))
         .on("end", resolve)
         .on("error", reject);
@@ -406,7 +411,7 @@ const BulkUploadUsers = async (req, res) => {
       const displayName = row.displayName?.trim();
       const rollNo = row.rollNo?.trim();
       const phoneNo = row.phoneNo?.trim();
-      console.log(name, email, displayName, rollNo, phoneNo )
+      console.log(name, email, displayName, rollNo, phoneNo)
 
       if (!name || !email || !rollNo || !phoneNo) {
         failedCount++;
