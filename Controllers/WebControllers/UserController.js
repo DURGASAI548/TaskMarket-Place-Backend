@@ -406,6 +406,7 @@ const BulkUploadUsers = async (req, res) => {
       const displayName = row.displayName?.trim();
       const rollNo = row.rollNo?.trim();
       const phoneNo = row.phoneNo?.trim();
+      console.log(name, email, displayName, rollNo, phoneNo )
 
       if (!name || !email || !rollNo || !phoneNo) {
         failedCount++;
