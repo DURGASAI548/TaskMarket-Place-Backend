@@ -12,6 +12,7 @@ router.post('/add-user',upload.single("profile"),VerifyToken,UserController.AddU
 router.get('/get-users',VerifyToken,UserController.GetUsers);
 router.post(
   "/add-users/bulk-upload",
+  VerifyToken,
   Upload.single("file"),
   UserController.BulkUploadUsers
 );
