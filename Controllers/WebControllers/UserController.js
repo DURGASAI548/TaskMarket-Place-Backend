@@ -25,7 +25,7 @@ const GetNormalUsers = async (req, res) => {
 }
 const GetNormalUsersforBranch = async (req, res) => {
   try {
-    const { branchId } = req.params; 
+    const { branchId } = req.params;
 
     if (!branchId) {
       return res.status(400).json({
@@ -356,7 +356,7 @@ const BulkUploadUsers = async (req, res) => {
     }
 
     if (loggedUser.userType === "superAdmin") {
-    } 
+    }
     else if (loggedUser.userType === "orgAdmin") {
       if (loggedUser.org.toString() !== org) {
         return res.status(403).json({
@@ -364,7 +364,7 @@ const BulkUploadUsers = async (req, res) => {
           message: "You can only upload users to your organization",
         });
       }
-    } 
+    }
     else if (loggedUser.userType === "branchaAdmin") {
       if (
         loggedUser.org.toString() !== org ||
@@ -375,7 +375,7 @@ const BulkUploadUsers = async (req, res) => {
           message: "You can only upload users to your branch",
         });
       }
-    } 
+    }
     else {
       return res.status(403).json({
         success: false,
@@ -383,7 +383,7 @@ const BulkUploadUsers = async (req, res) => {
       });
     }
 
-    
+
     const users = [];
 
     await new Promise((resolve, reject) => {
@@ -399,8 +399,13 @@ const BulkUploadUsers = async (req, res) => {
     const failedData = [];
 
     for (let row of users) {
-      const { name, email, displayName, rollNo, phoneNo } = row;
-      console.log(name, email, displayName, rollNo, phoneNo )
+      console.log("Row Keys:", Object.keys(row));
+
+      const name = row.name?.trim();
+      const email = row.email?.trim();
+      const displayName = row.displayName?.trim();
+      const rollNo = row.rollNo?.trim();
+      const phoneNo = row.phoneNo?.trim();
 
       if (!name || !email || !rollNo || !phoneNo) {
         failedCount++;
@@ -447,7 +452,7 @@ const BulkUploadUsers = async (req, res) => {
 
     fs.unlinkSync(req.file.path);
 
-   
+
     return res.status(200).json({
       success: true,
       message: "Bulk upload completed",
