@@ -475,8 +475,8 @@ const ResetPassword = async (req, res) => {
         message: "User not found",
       });
     }
-console.log(otp , user.otp)
-    if (user.otp !== otp) {
+// console.log(otp , user.otp)
+    if (user.otp !== Number(otp)) {
       return res.status(400).json({
         success: false,
         message: "Invalid OTP",
