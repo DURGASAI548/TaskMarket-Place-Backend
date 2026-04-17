@@ -10,5 +10,7 @@ router.get('/verify-token',AuthenticationController.VerifyTokenEachPage);
 router.post('/check-user-otp',AuthenticationController.CheckUserAndSendOTP);
 router.post('/verify-otp',AuthenticationController.VerifyUserOTP);
 router.post('/set-password',AuthenticationController.SetUserPassword);
+router.post('/reset-password-otp',AuthenticationController.SendResetPasswordOtp);
+router.post('/reset-password',AuthenticationController.ResetPassword);
 
 module.exports = router;
