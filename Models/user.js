@@ -57,7 +57,14 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "bankaccount", 
     },
-
+    otp:{
+      type: Number,
+      default:null,
+    },
+    otpCreatedAt:{
+      type: Date,
+      default: null
+    },
     addedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
