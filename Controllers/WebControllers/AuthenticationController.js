@@ -40,7 +40,7 @@ const CheckUserAndSendOTP = async (req, res) => {
                 message: "Identifier (email or displayName) is required",
             });
         }
-        const UserSchema = await User.findOne({
+        const user = await UserSchema.findOne({
             $or: [{ email: identifier }, { displayName: identifier }],
         });
 
