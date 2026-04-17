@@ -80,58 +80,58 @@ const CheckUserAndSendOTP = async (req, res) => {
             html: `
        <!DOCTYPE html>
 
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>OTP Verification</title>
-</head>
-<body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f4f6f8;">
+        <html lang="en">
+        <head>
+        <meta charset="UTF-8">
+        <title>OTP Verification</title>
+        </head>
+        <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f4f6f8;">
 
-  <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.08);">
-<tr>
-  <td style="background:#0a66c2; padding:20px; text-align:center; color:#ffffff;">
-    <h2 style="margin:0;">Task Market Place</h2>
-    <p style="margin:5px 0 0; font-size:14px;">Aditya University</p>
-  </td>
-</tr>
+        <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.08);">
+        <tr>
+        <td style="background:#0a66c2; padding:20px; text-align:center; color:#ffffff;">
+            <h2 style="margin:0;">Task Market Place</h2>
+            <p style="margin:5px 0 0; font-size:14px;">Aditya University</p>
+        </td>
+        </tr>
 
-<!-- Body -->
-<tr>
-  <td style="padding:30px; text-align:left; color:#333;">
-    <h3 style="margin-top:0;">OTP Verification</h3>
-    <p>Hello,</p>
-    <p>
-      Use the One-Time Password (OTP) below to complete your verification process on 
-      <strong>Task Market Place</strong>.
-    </p>
+        <!-- Body -->
+        <tr>
+        <td style="padding:30px; text-align:left; color:#333;">
+            <h3 style="margin-top:0;">OTP Verification</h3>
+            <p>Hello,</p>
+            <p>
+            Use the One-Time Password (OTP) below to complete your verification process on 
+            <strong>Task Market Place</strong>.
+            </p>
 
-    <!-- OTP Box -->
-    <div style="margin:25px 0; text-align:center;">
-      <span style="display:inline-block; padding:15px 30px; font-size:24px; letter-spacing:5px; background:#f0f4ff; color:#0a66c2; border-radius:6px; font-weight:bold;">
-        {{OTP_CODE}}
-      </span>
-    </div>
+            <!-- OTP Box -->
+            <div style="margin:25px 0; text-align:center;">
+            <span style="display:inline-block; padding:15px 30px; font-size:24px; letter-spacing:5px; background:#f0f4ff; color:#0a66c2; border-radius:6px; font-weight:bold;">
+                ${otp}
+            </span>
+            </div>
 
-    <p style="font-size:14px;">
-      This OTP is valid for <strong>5 minutes</strong>. Please do not share it with anyone.
-    </p>
+            <p style="font-size:14px;">
+            This OTP is valid for <strong>5 minutes</strong>. Please do not share it with anyone.
+            </p>
 
-    <p style="font-size:14px; color:#777;">
-      If you did not request this, you can safely ignore this email.
-    </p>
-  </td>
-</tr>
+            <p style="font-size:14px; color:#777;">
+            If you did not request this, you can safely ignore this email.
+            </p>
+        </td>
+        </tr>
 
-<!-- Footer -->
-<tr>
-  <td style="background:#f4f6f8; padding:20px; text-align:center; font-size:12px; color:#777;">
-    © 2026 Aditya University<br/>
-    Task Market Place | All Rights Reserved
-  </td>
-</tr>
+        <!-- Footer -->
+        <tr>
+        <td style="background:#f4f6f8; padding:20px; text-align:center; font-size:12px; color:#777;">
+            © 2026 Aditya University<br/>
+            Task Market Place | All Rights Reserved
+        </td>
+        </tr>
 
-  </table>
-
+        </table>
+        </body>
       `
         };
 
