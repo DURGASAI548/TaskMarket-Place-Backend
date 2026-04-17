@@ -357,9 +357,187 @@ const VerifyTokenEachPage = async (req, res) => {
     }
 }
 
+const SendResetPasswordOtp = async (req, res) => {
+    try {
+        const { identifier } = req.body; 
+        if (!identifier) {
+            return res.status(400).json({
+                success: false,
+                message: "Email or username is required",
+            });
+        }
+
+        const user = await UserSchema.findOne({
+            $or: [{ email: identifier }, { displayName: identifier }],
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+        if (!user.isEmailVerified || user.isEmailVerified == null) {
+            return res.status(400).json({
+                success: false,
+                message: "Email found but not verified",
+            });
+        }
+
+        // generate OTP
+        const otp = generateOTP();
+
+        // save OTP in DB
+        user.otp = otp;
+        user.otpCreatedAt = new Date();
+        await user.save();
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: user.email,
+            subject: "Task Market Place Password Reset OTP",
+            html: `
+            <!DOCTYPE html>
+  <html>
+  <body style="margin:0; font-family: Arial; background:#f4f6f8;">
+    <table align="center" width="100%" style="max-width:600px; background:#fff; border-radius:8px;">
+      
+      <tr>
+        <td style="background:#0a66c2; color:#fff; text-align:center; padding:20px;">
+          <h2>Task Market Place</h2>
+          <p>Aditya University</p>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:30px; color:#333;">
+          <h3>Password Reset OTP</h3>
+          <p>Use the OTP below to reset your password:</p>
+
+          <div style="text-align:center; margin:20px 0;">
+            <span style="font-size:26px; letter-spacing:6px; padding:12px 25px; background:#eef2ff; color:#0a66c2; border-radius:6px;">
+              ${otp}
+            </span>
+          </div>
+
+          <p>This OTP is valid for <b>5 minutes</b>.</p>
+          <p>If you didn't request this, ignore this email.</p>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="text-align:center; font-size:12px; padding:15px; color:#777;">
+          © 2026 Aditya University | Task Market Place
+        </td>
+      </tr>
+
+    </table>
+  </body>
+  </html>
+                `
+        };
+
+        await transporter.sendMail(mailOptions);
+
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent successfully to your email",
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+        });
+    }
+};
+
+const ResetPassword = async (req, res) => {
+  try {
+    const { identifier, otp, newPassword } = req.body;
+
+    if (!identifier || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    const user = await UserSchema.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    // check OTP expiry (5 minutes)
+    const isExpired =
+      Date.now() - new Date(user.otpCreatedAt).getTime() > 5 * 60 * 1000;
+
+    if (isExpired) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired",
+      });
+    }
+
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password
+    );
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from old password",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // update password + clear OTP
+    user.password = hashedPassword;
+    // user.otp = null;
+    // user.otpCreatedAt = null;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
+};
+
+
+
 exports.Login = Login;
 exports.Logout = Logout;
 exports.VerifyTokenEachPage = VerifyTokenEachPage;
 exports.CheckUserAndSendOTP = CheckUserAndSendOTP;
 exports.VerifyUserOTP = VerifyUserOTP;
 exports.SetUserPassword = SetUserPassword;
+exports.SetUserPassword = SetUserPassword;
+exports.SendResetPasswordOtp = SendResetPasswordOtp;
+exports.ResetPassword = ResetPassword;
