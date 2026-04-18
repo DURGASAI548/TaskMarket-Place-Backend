@@ -16,5 +16,7 @@ router.post(
   Upload.single("file"),
   UserController.BulkUploadUsers
 );
+router.delete('/delete-user/:userId',VerifyToken,UserController.DeleteUser);
+
 
 module.exports = router;

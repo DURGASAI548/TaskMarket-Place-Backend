@@ -2,8 +2,37 @@ const mongoose = require('mongoose')
 const UserSchema = require("../../Models/user")
 const OrganizationSchema = require("../../Models/organization")
 const BranchSchema = require("../../Models/branch")
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const csv = require("csv-parser");
 const fs = require("fs");
+
+// ✅ S3 Client (same config as your upload)
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_KEY,
+  },
+});
+
+// ✅ S3 Delete Utility
+const deleteFromS3 = async (fileKey) => {
+  try {
+    if (!fileKey) return;
+
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: fileKey, // must be the stored key (profileURL)
+    });
+
+    await s3.send(command);
+
+    console.log("✅ File deleted from S3:", fileKey);
+  } catch (error) {
+    console.error("❌ S3 Delete Error:", error.message);
+    // Do NOT throw → don't break main API
+  }
+};
 
 
 const GetNormalUsers = async (req, res) => {
@@ -480,9 +509,107 @@ const BulkUploadUsers = async (req, res) => {
   }
 };
 
+const DeleteUser = async (req, res) => {
+  try {
+    const loggedInUserId = req.user.id;
+    const { userId } = req.params;
+
+    // 1. Validate
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // 2. Logged-in user
+    const loggedUser = await UserSchema.findById(loggedInUserId);
+    if (!loggedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Logged-in user not found",
+      });
+    }
+
+    // 3. Target user
+    const userToDelete = await UserSchema.findById(userId);
+    if (!userToDelete) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // 🔒 Optional: Prevent self delete
+    if (userId === loggedInUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot delete yourself",
+      });
+    }
+
+    // 🔒 Role-based access
+    if (loggedUser.userType === "superAdmin") {
+      // ✅ can delete anyone
+    }
+
+    else if (loggedUser.userType === "orgAdmin") {
+      if (
+        userToDelete.org?.toString() !== loggedUser.org?.toString()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only delete users in your organization",
+        });
+      }
+    }
+
+    else if (loggedUser.userType === "branchAdmin") {
+      if (
+        userToDelete.org?.toString() !== loggedUser.org?.toString() ||
+        userToDelete.branch?.toString() !== loggedUser.branch?.toString()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only delete users in your branch",
+        });
+      }
+    }
+
+    else {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    // 🔥 Delete profile image from S3
+    if (userToDelete.profileURL) {
+      await deleteFromS3(userToDelete.profileURL);
+    }
+
+    // 🗑️ Delete user from DB
+    await UserSchema.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+
+  } catch (error) {
+    console.log("Delete User Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting user",
+      error: error.message,
+    });
+  }
+};
+
 
 exports.GetNormalUsersforBranch = GetNormalUsersforBranch;
 exports.GetNormalUsers = GetNormalUsers;
 exports.AddUser = AddUser;
 exports.GetUsers = GetUsers;
 exports.BulkUploadUsers = BulkUploadUsers;
+exports.DeleteUser = DeleteUser;
