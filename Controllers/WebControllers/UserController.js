@@ -514,7 +514,6 @@ const DeleteUser = async (req, res) => {
     const loggedInUserId = req.user.id;
     const { userId } = req.params;
 
-    // 1. Validate
     if (!userId) {
       return res.status(400).json({
         success: false,
@@ -522,8 +521,10 @@ const DeleteUser = async (req, res) => {
       });
     }
 
-    // 2. Logged-in user
+    // 🔍 Fetch users
     const loggedUser = await UserSchema.findById(loggedInUserId);
+    const userToDelete = await UserSchema.findById(userId);
+
     if (!loggedUser) {
       return res.status(404).json({
         success: false,
@@ -531,8 +532,6 @@ const DeleteUser = async (req, res) => {
       });
     }
 
-    // 3. Target user
-    const userToDelete = await UserSchema.findById(userId);
     if (!userToDelete) {
       return res.status(404).json({
         success: false,
@@ -540,7 +539,7 @@ const DeleteUser = async (req, res) => {
       });
     }
 
-    // 🔒 Optional: Prevent self delete
+    // ❌ Prevent self delete
     if (userId === loggedInUserId) {
       return res.status(400).json({
         success: false,
@@ -550,7 +549,7 @@ const DeleteUser = async (req, res) => {
 
     // 🔒 Role-based access
     if (loggedUser.userType === "superAdmin") {
-      // ✅ can delete anyone
+      // full access
     }
 
     else if (loggedUser.userType === "orgAdmin") {
@@ -583,12 +582,26 @@ const DeleteUser = async (req, res) => {
       });
     }
 
+    // 🧠 IMPORTANT: Clean references before deleting user
+
+    // 1️⃣ Remove from Organization if orgAdmin
+    await OrganizationSchema.updateMany(
+      { orgAdminUser: userId },
+      { $set: { orgAdminUser: null } }
+    );
+
+    // 2️⃣ Remove from Branch if branchAdmin
+    await BranchSchema.updateMany(
+      { branchAdminUser: userId },
+      { $set: { branchAdminUser: null } }
+    );
+
     // 🔥 Delete profile image from S3
     if (userToDelete.profileURL) {
       await deleteFromS3(userToDelete.profileURL);
     }
 
-    // 🗑️ Delete user from DB
+    // 🗑️ Delete user
     await UserSchema.findByIdAndDelete(userId);
 
     return res.status(200).json({
@@ -605,6 +618,7 @@ const DeleteUser = async (req, res) => {
     });
   }
 };
+
 
 
 exports.GetNormalUsersforBranch = GetNormalUsersforBranch;
