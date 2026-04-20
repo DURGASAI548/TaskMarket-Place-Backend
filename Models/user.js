@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema(
     },
     userType: {
       type: String,
-      enum: ["superAdmin", "orgAdmin", "branchaAdmin", "user"], 
+      enum: ["superAdmin", "orgAdmin", "branchAdmin", "user"], 
       default: "user",
     },
     bankAccount: {
