@@ -812,7 +812,6 @@ const GetUserById = async (req, res) => {
       });
     }
 
-    // 🔍 Logged-in user
     const loggedUser = await UserSchema.findById(loggedInUserId);
     if (!loggedUser) {
       return res.status(404).json({
@@ -821,7 +820,6 @@ const GetUserById = async (req, res) => {
       });
     }
 
-    // 🔍 Target user (only required fields)
     const user = await UserSchema.findById(userId)
       .select("name email displayName rollNo phoneNo org branch profileURL")
       .populate("org", "orgName")
@@ -834,14 +832,11 @@ const GetUserById = async (req, res) => {
       });
     }
 
-    // 🔒 Role-based access
 
-    // ✅ superAdmin → full access
     if (loggedUser.userType === "superAdmin") {
       // no restriction
     }
 
-    // ✅ orgAdmin → only same org
     else if (loggedUser.userType === "orgAdmin") {
       if (
         user.org?._id.toString() !== loggedUser.org?.toString()
@@ -853,7 +848,6 @@ const GetUserById = async (req, res) => {
       }
     }
 
-    // ✅ branchAdmin → only same branch
     else if (loggedUser.userType === "branchAdmin") {
       if (
         user.org?._id.toString() !== loggedUser.org?.toString() ||
@@ -873,7 +867,6 @@ const GetUserById = async (req, res) => {
       });
     }
 
-    // 🎯 Format response (rename profileURL → profile)
     const responseData = {
       _id: user._id,
       name: user.name,
