@@ -619,11 +619,295 @@ const DeleteUser = async (req, res) => {
   }
 };
 
+const EditUser = async (req, res) => {
+  try {
+    const loggedInUserId = req.user.id;
+    const { userId } = req.params;
+
+    const {
+      name,
+      email,
+      rollNo,
+      phoneNo,
+      org,
+      branch,
+      displayName,
+    } = req.body;
+
+    // 🔍 logged user
+    const loggedUser = await UserSchema.findById(loggedInUserId);
+    if (!loggedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Logged-in user not found",
+      });
+    }
+
+    // 🔍 target user
+    const user = await UserSchema.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // 🔒 ROLE CHECKS
+
+    // ✅ superAdmin → full control
+    if (loggedUser.userType === "superAdmin") {
+      // no restriction
+    }
+
+    // ✅ orgAdmin
+    else if (loggedUser.userType === "orgAdmin") {
+      if (user.org?.toString() !== loggedUser.org?.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only edit users in your organization",
+        });
+      }
+
+      // ❌ cannot move user outside org
+      if (org && org !== loggedUser.org.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: "Cannot change organization",
+        });
+      }
+
+      // ✅ branch must belong to same org
+      if (branch) {
+        const branchData = await BranchSchema.findById(branch);
+        if (!branchData) {
+          return res.status(404).json({
+            success: false,
+            message: "Branch not found",
+          });
+        }
+
+        if (branchData.org.toString() !== loggedUser.org.toString()) {
+          return res.status(400).json({
+            success: false,
+            message: "Branch does not belong to your organization",
+          });
+        }
+      }
+    }
+
+    // ✅ branchAdmin
+    else if (loggedUser.userType === "branchAdmin") {
+      if (
+        user.org?.toString() !== loggedUser.org?.toString() ||
+        user.branch?.toString() !== loggedUser.branch?.toString()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only edit users in your branch",
+        });
+      }
+
+      // ❌ cannot change org
+      if (org && org !== user.org.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: "Cannot change organization",
+        });
+      }
+
+      // ⚠️ branch change allowed ONLY if he is admin of that branch
+      if (branch && branch !== loggedUser.branch.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only assign users to your branch",
+        });
+      }
+    }
+
+    else {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    // 🔍 Duplicate check (email / rollNo)
+    if (email || rollNo) {
+      const existingUser = await UserSchema.findOne({
+        _id: { $ne: userId },
+        $or: [
+          ...(email ? [{ email }] : []),
+          ...(rollNo ? [{ rollNo }] : []),
+        ],
+      });
+
+      if (existingUser) {
+        let message = "User already exists";
+
+        if (existingUser.email === email) {
+          message = "Email already exists";
+        } else if (existingUser.rollNo === rollNo) {
+          message = "Roll number already exists";
+        }
+
+        return res.status(400).json({
+          success: false,
+          message,
+        });
+      }
+    }
+
+    // 🔥 IMAGE REPLACEMENT (IMPORTANT PART)
+    let profileURL = user.profileURL;
+
+    if (req.file) {
+      // delete old image
+      if (user.profileURL) {
+        await deleteFromS3(user.profileURL);
+      }
+
+      // save new image key
+      profileURL = req.file.key;
+    }
+
+    // ✅ update fields (only if provided)
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (rollNo) user.rollNo = rollNo;
+    if (phoneNo) user.phoneNo = phoneNo;
+    if (displayName) user.displayName = displayName;
+    if (org) user.org = org;
+    if (branch !== undefined) user.branch = branch;
+    user.profileURL = profileURL;
+
+    user.updatedBy = loggedInUserId;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: user,
+    });
+
+  } catch (error) {
+    console.log("Edit User Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: error.message,
+    });
+  }
+};
+
+const GetUserById = async (req, res) => {
+  try {
+    const loggedInUserId = req.user.id;
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // 🔍 Logged-in user
+    const loggedUser = await UserSchema.findById(loggedInUserId);
+    if (!loggedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Logged-in user not found",
+      });
+    }
+
+    // 🔍 Target user (only required fields)
+    const user = await UserSchema.findById(userId)
+      .select("name email displayName rollNo phoneNo org branch profileURL")
+      .populate("org", "orgName")
+      .populate("branch", "branchName");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // 🔒 Role-based access
+
+    // ✅ superAdmin → full access
+    if (loggedUser.userType === "superAdmin") {
+      // no restriction
+    }
+
+    // ✅ orgAdmin → only same org
+    else if (loggedUser.userType === "orgAdmin") {
+      if (
+        user.org?._id.toString() !== loggedUser.org?.toString()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only view users in your organization",
+        });
+      }
+    }
+
+    // ✅ branchAdmin → only same branch
+    else if (loggedUser.userType === "branchAdmin") {
+      if (
+        user.org?._id.toString() !== loggedUser.org?.toString() ||
+        user.branch?._id.toString() !== loggedUser.branch?.toString()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only view users in your branch",
+        });
+      }
+    }
+
+    else {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    // 🎯 Format response (rename profileURL → profile)
+    const responseData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      displayName: user.displayName,
+      rollNo: user.rollNo,
+      phoneNo: user.phoneNo,
+      org: user.org,
+      branch: user.branch,
+      profile: user.profileURL,
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: responseData,
+    });
+
+  } catch (error) {
+    console.log("Get User Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching user",
+      error: error.message,
+    });
+  }
+};
+
 
 
 exports.GetNormalUsersforBranch = GetNormalUsersforBranch;
 exports.GetNormalUsers = GetNormalUsers;
 exports.AddUser = AddUser;
+exports.EditUser = EditUser;
 exports.GetUsers = GetUsers;
+exports.GetUserById = GetUserById;
 exports.BulkUploadUsers = BulkUploadUsers;
 exports.DeleteUser = DeleteUser;

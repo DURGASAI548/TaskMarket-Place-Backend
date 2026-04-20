@@ -9,6 +9,8 @@ const Upload = multer({ dest: "uploads/" });
 router.get('/get-normal-users', VerifyToken,UserController.GetNormalUsers)
 router.get('/get-normal-users-for-branch/:branchId', VerifyToken,UserController.GetNormalUsersforBranch)
 router.post('/add-user',upload.single("profile"),VerifyToken,UserController.AddUser);
+router.post('/get-user-by-id/:userId',VerifyToken,UserController.GetUserById);
+router.post('/edit-user/:userId',upload.single("profile"),VerifyToken,UserController.EditUser);
 router.get('/get-users',VerifyToken,UserController.GetUsers);
 router.post(
   "/add-users-bulk-upload",
