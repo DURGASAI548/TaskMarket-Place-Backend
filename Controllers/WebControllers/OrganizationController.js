@@ -360,7 +360,8 @@ const DeleteOrganization = async (req, res) => {
       });
     }
 
-    const organization = await OrganizationSchema.findById(orgId);
+    const organization = await OrganizationSchema.findById(orgId)
+    .populate("orgAdminUser","name email");
 
     if (!organization) {
       return res.status(404).json({
