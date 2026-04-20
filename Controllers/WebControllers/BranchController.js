@@ -395,7 +395,9 @@ const GetBranchById = async (req, res) => {
       });
     }
 
-    const branch = await BranchSchema.findById(branchId).populate("org","orgName");
+    const branch = await BranchSchema.findById(branchId)
+    .populate("org","orgName")
+    .populate("branchAdminUser","name email")
 
     if (!branch) {
       return res.status(404).json({
