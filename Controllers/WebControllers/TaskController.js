@@ -121,7 +121,7 @@ const AddTask = async (req, res) => {
       taskRegistrationLiveFrom: new Date(taskRegistrationLiveFrom),
       taskRewardType,
       taskRewardNo: Number(taskRewardNo),
-      taskRewards: JSON.stringify(parsedRewards), // schema expects string
+      taskRewards: parsedRewards, 
       isLive: isLive === "true" || isLive === true,
       taskDocument: taskDocumentURL,
       taskTags: parsedTaskTags,
