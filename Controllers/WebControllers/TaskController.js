@@ -4,6 +4,54 @@ const OrganizationSchema = require("../../Models/organization")
 const BranchSchema = require("../../Models/branch")
 const TaskSchema = require("../../Models/task")
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const crypto = require("crypto");
+const generateTaskNo = () => {
+  return Math.floor(100000 + Math.random() * 900000);
+};
+
+// 🔐 Generate secure passKey
+const generatePassKey = (length = 16) => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const bytes = crypto.randomBytes(length);
+
+  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+};
+
+const GenerateTaskCredentials = async (req, res) => {
+  try {
+    let taskNo;
+    let passKey;
+
+    let taskExists = true;
+    let passKeyExists = true;
+
+    while (taskExists) {
+      taskNo = generateTaskNo();
+      taskExists = await Task.exists({ taskNo });
+    }
+
+    while (passKeyExists) {
+      passKey = generatePassKey(16);
+      passKeyExists = await Task.exists({ passKey });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Generated successfully",
+      data: {
+        taskNo,
+        passKey,
+      },
+    });
+
+  } catch (error) {
+    console.error("Error generating credentials:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
 
 const AddTask = async (req, res) => {
   try {
@@ -152,4 +200,6 @@ const AddTask = async (req, res) => {
   }
 };
 
+
 exports.AddTask = AddTask
+exports.GenerateTaskCredentials = GenerateTaskCredentials
