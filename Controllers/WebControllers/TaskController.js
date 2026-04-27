@@ -66,7 +66,7 @@ const AddTask = async (req, res) => {
     }
 
     // 🔁 Check duplicate taskTitle (case-insensitive)
-    const existingTitle = await Task.findOne({
+    const existingTitle = await TaskSchema.findOne({
       taskTitle: { $regex: `^${taskTitle}$`, $options: "i" },
     });
 
@@ -112,7 +112,7 @@ const AddTask = async (req, res) => {
     }
 
     // 💾 Create task
-    const newTask = await Task.create({
+    const newTask = await TaskSchema.create({
       taskNo: Number(taskNo),
       taskTitle: taskTitle.trim(),
       taskDescription: taskDescription?.trim(),
