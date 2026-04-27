@@ -108,7 +108,7 @@ const AddTask = async (req, res) => {
     // 📄 File upload (S3)
     let taskDocumentURL = null;
     if (req.file) {
-      taskDocumentURL = req.file.location; // multer-s3 gives this
+      taskDocumentURL = req.file.key; // multer-s3 gives this
     }
 
     // 💾 Create task
