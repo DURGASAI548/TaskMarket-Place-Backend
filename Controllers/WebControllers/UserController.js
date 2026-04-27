@@ -52,6 +52,7 @@ const GetNormalUsers = async (req, res) => {
     });
   }
 }
+
 const GetNormalUsersforBranch = async (req, res) => {
   try {
     const { branchId } = req.params;
@@ -894,6 +895,38 @@ const GetUserById = async (req, res) => {
   }
 };
 
+const getUsersByOrg = async (req, res) => {
+  try {
+    const { orgId } = req.params;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        message: "Organization ID is required",
+      });
+    }
+
+    const users = await UserSchema.find(
+      { org: orgId },
+      { _id: 1, name: 1, profileURL: 1 }
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+
+  } catch (error) {
+    console.log("Error in getUsersByOrg:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+
 
 
 exports.GetNormalUsersforBranch = GetNormalUsersforBranch;
@@ -904,3 +937,4 @@ exports.GetUsers = GetUsers;
 exports.GetUserById = GetUserById;
 exports.BulkUploadUsers = BulkUploadUsers;
 exports.DeleteUser = DeleteUser;
+exports.getUsersByOrg = getUsersByOrg;

@@ -92,6 +92,11 @@ const taskSchema = new mongoose.Schema(
       ref: "organization",
     },
 
+    passKey:{
+       type: String,
+       required:true
+    },
+
     evaluators: [
       {
         type: mongoose.Schema.Types.ObjectId,
