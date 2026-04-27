@@ -151,4 +151,4 @@ const AddTask = async (req, res) => {
   }
 };
 
-expotrs.AddTask = AddTask
+exports.AddTask = AddTask
