@@ -25,6 +25,7 @@ const AddTask = async (req, res) => {
         message: "You are not allowed to create tasks",
       });
     }
+    console.log(req.body)
 
     const {
       taskNo,
