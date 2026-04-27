@@ -79,4 +79,26 @@ const CreateTag = async (req, res) => {
   }
 };
 
+const GetAllTags = async (req, res) => {
+  try {
+    const tags = await TagSchema.find(
+      {},
+      { _id: 1, TagName: 1 } 
+    ).sort({ TagName: 1 });
+
+    return res.status(200).json({
+      success: true,
+      count: tags.length,
+      data: tags,
+    });
+  } catch (error) {
+    console.error("Error in getAllTags:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 exports.CreateTag = CreateTag
+exports.GetAllTags = GetAllTags
