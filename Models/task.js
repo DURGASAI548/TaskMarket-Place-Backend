@@ -40,9 +40,11 @@ const taskSchema = new mongoose.Schema(
       type: Number,
     },
 
-    taskRewards: {
-      type: String,
-    },
+    taskRewards: [
+      {
+        type: String,
+      },
+    ],
 
     isLive: {
       type: Boolean,
@@ -85,6 +87,7 @@ const taskSchema = new mongoose.Schema(
     branchScope: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "branch",
+      default :null
     },
 
     orgScope: {

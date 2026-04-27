@@ -5,3 +5,7 @@ const VerifyToken = require('../../ExternalSources/JwtController');
 const {upload} = require("../../ExternalSources/S3Controller")
 const multer = require("multer");
 const Upload = multer({ dest: "uploads/" });
+
+router.post("/add-task",VerifyToken,TaskController.AddTask)
+
+module.exports = router
