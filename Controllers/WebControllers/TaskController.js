@@ -9,7 +9,6 @@ const generateTaskNo = () => {
   return Math.floor(100000 + Math.random() * 900000);
 };
 
-// 🔐 Generate secure passKey
 const generatePassKey = (length = 16) => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const bytes = crypto.randomBytes(length);
@@ -27,12 +26,12 @@ const GenerateTaskCredentials = async (req, res) => {
 
     while (taskExists) {
       taskNo = generateTaskNo();
-      taskExists = await Task.exists({ taskNo });
+      taskExists = await TaskSchema.exists({ taskNo });
     }
 
     while (passKeyExists) {
       passKey = generatePassKey(16);
-      passKeyExists = await Task.exists({ passKey });
+      passKeyExists = await TaskSchema.exists({ passKey });
     }
 
     return res.status(200).json({
