@@ -19,7 +19,7 @@ router.post(
   UserController.BulkUploadUsers
 );
 router.delete('/delete-user/:userId',VerifyToken,UserController.DeleteUser);
-router.get('/get-task-eligible-evaluators',VerifyToken,UserController.getUsersByOrg);
+router.get('/get-task-eligible-evaluators/:orgId',VerifyToken,UserController.getUsersByOrg);
 
 
 module.exports = router;
