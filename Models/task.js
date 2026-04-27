@@ -87,7 +87,8 @@ const taskSchema = new mongoose.Schema(
     branchScope: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "branch",
-      default :null
+      default :null,
+      required:false
     },
 
     orgScope: {
