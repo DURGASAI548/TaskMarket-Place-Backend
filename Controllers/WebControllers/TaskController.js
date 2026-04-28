@@ -3,6 +3,7 @@ const UserSchema = require("../../Models/user")
 const OrganizationSchema = require("../../Models/organization")
 const BranchSchema = require("../../Models/branch")
 const TaskSchema = require("../../Models/task")
+const RegistrationSchema = require("../../Models/registration")
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require("crypto");
 const generateTaskNo = () => {
@@ -66,7 +67,6 @@ const AddTask = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // ❌ Restrict normal users
     if (user.userType === "user") {
       return res.status(403).json({
         success: false,
@@ -254,6 +254,9 @@ const AddTask = async (req, res) => {
     });
   }
 };
+
+
+
 
 
 exports.AddTask = AddTask
