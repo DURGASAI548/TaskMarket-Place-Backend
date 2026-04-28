@@ -351,6 +351,7 @@ const GetAllTasks = async (req, res) => {
           taskRewardType: 1,
           orgScopeName: "$orgData.orgName",
           branchScopeName: "$branchData.branchName",
+          taskDescription:1,
           taskTags: {
             $map: {
               input: "$tagData",
