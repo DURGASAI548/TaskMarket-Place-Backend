@@ -255,9 +255,140 @@ const AddTask = async (req, res) => {
   }
 };
 
+const GetAllTasks = async (req, res) => {
+  try {
+    const tasks = await TaskSchema.aggregate([
+
+      {
+        $lookup: {
+          from: "organizations",
+          localField: "orgScope",
+          foreignField: "_id",
+          as: "orgData",
+        },
+      },
+      { $unwind: { path: "$orgData", preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: "branches",
+          localField: "branchScope",
+          foreignField: "_id",
+          as: "branchData",
+        },
+      },
+      { $unwind: { path: "$branchData", preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: "tags",
+          localField: "taskTags",
+          foreignField: "_id",
+          as: "tagData",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "registrations",
+          localField: "_id",
+          foreignField: "TaskID",
+          as: "registrations",
+        },
+      },
+
+      {
+        $addFields: {
+          registeredCount: { $size: "$registrations" },
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          let: {
+            orgId: "$orgScope",
+            branchId: "$branchScope",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$org", "$$orgId"] },
+                    {
+                      $cond: [
+                        { $ifNull: ["$$branchId", false] },
+                        { $eq: ["$branch", "$$branchId"] },
+                        true,
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "eligibleUsers",
+        },
+      },
+
+      {
+        $addFields: {
+          eligibleCount: { $size: "$eligibleUsers" },
+        },
+      },
+
+      {
+        $project: {
+          _id: 1,
+          taskNo: 1,
+          taskTitle: 1,
+          isLive: 1,
+          taskRegistrationLiveFrom: 1,
+          taskRegistrationDeadline: 1,
+          taskSubmissionDeadline: 1,
+          taskResultDeadline: 1,
+          taskRewardType: 1,
+
+          orgScopeName: "$orgData.name",
+          branchScopeName: "$branchData.name",
+
+          taskTags: {
+            $map: {
+              input: "$tagData",
+              as: "tag",
+              in: "$$tag.TagName",
+            },
+          },
+
+          registeredCount: 1,
+          eligibleCount: 1,
+        },
+      },
+
+      { $sort: { createdAt: -1 } }
+
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: tasks.length,
+      data: tasks,
+    });
+
+  } catch (error) {
+    console.error("Error in getAllTasks:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 
 
 
 
 exports.AddTask = AddTask
 exports.GenerateTaskCredentials = GenerateTaskCredentials
+exports.GetAllTasks = GetAllTasks

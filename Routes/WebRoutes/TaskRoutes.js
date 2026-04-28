@@ -8,5 +8,6 @@ const Upload = multer({ dest: "uploads/" });
 
 router.post("/add-task",upload.single("taskDocument"),VerifyToken,TaskController.AddTask)
 router.get("/get-task-credentials",VerifyToken,TaskController.GenerateTaskCredentials)
+router.get("/get-tasks",VerifyToken,TaskController.GetAllTasks)
 
 module.exports = router
