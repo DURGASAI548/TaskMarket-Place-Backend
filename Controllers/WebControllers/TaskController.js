@@ -66,13 +66,13 @@ const AddTask = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    // ❌ Restrict normal users
     if (user.userType === "user") {
       return res.status(403).json({
         success: false,
         message: "You are not allowed to create tasks",
       });
     }
-    console.log(req.body)
 
     const {
       taskNo,
@@ -104,6 +104,44 @@ const AddTask = async (req, res) => {
       });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(orgScope)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid orgScope",
+      });
+    }
+
+    if (branchScope && !mongoose.Types.ObjectId.isValid(branchScope)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid branchScope",
+      });
+    }
+
+    const regLiveFrom = new Date(taskRegistrationLiveFrom);
+    const regDeadline = new Date(taskRegistrationDeadline);
+    const submissionDeadline = new Date(taskSubmissionDeadline);
+    const resultDeadline = new Date(taskResultDeadline);
+
+    if (
+      isNaN(regLiveFrom) ||
+      isNaN(regDeadline) ||
+      isNaN(submissionDeadline) ||
+      isNaN(resultDeadline)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format",
+      });
+    }
+
+    if (!(regLiveFrom < regDeadline && regDeadline < submissionDeadline && submissionDeadline < resultDeadline)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date sequence. Ensure: Live < Registration < Submission < Result",
+      });
+    }
+
     const existingTaskNo = await TaskSchema.findOne({ taskNo });
     if (existingTaskNo) {
       return res.status(409).json({
@@ -112,7 +150,6 @@ const AddTask = async (req, res) => {
       });
     }
 
-    // 🔁 Check duplicate taskTitle (case-insensitive)
     const existingTitle = await TaskSchema.findOne({
       taskTitle: { $regex: `^${taskTitle}$`, $options: "i" },
     });
@@ -124,7 +161,14 @@ const AddTask = async (req, res) => {
       });
     }
 
-    // 🔐 Role-based validation
+    const existingPassKey = await TaskSchema.findOne({ passKey });
+    if (existingPassKey) {
+      return res.status(409).json({
+        success: false,
+        message: "PassKey already exists",
+      });
+    }
+
     if (user.userType === "orgAdmin") {
       if (String(user.org) !== String(orgScope)) {
         return res.status(403).json({
@@ -136,6 +180,7 @@ const AddTask = async (req, res) => {
 
     if (user.userType === "branchAdmin") {
       if (
+        !branchScope ||
         String(user.branch) !== String(branchScope) ||
         String(user.org) !== String(orgScope)
       ) {
@@ -146,29 +191,40 @@ const AddTask = async (req, res) => {
       }
     }
 
-    // 🧩 Parse JSON fields
-    const parsedTaskTags = JSON.parse(taskTags || "[]");
-    const parsedConstraints = JSON.parse(taskConstraints || "[]");
-    const parsedFileTypes = JSON.parse(fileAcceptType || "[]");
-    const parsedEvaluators = JSON.parse(evaluators || "[]");
-    const parsedRewards = JSON.parse(taskRewards || "[]");
-    // 📄 File upload (S3)
-    let taskDocumentURL = null;
-    if (req.file) {
-      taskDocumentURL = req.file.key; // multer-s3 gives this
+    let parsedTaskTags = [];
+    let parsedConstraints = [];
+    let parsedFileTypes = [];
+    let parsedEvaluators = [];
+    let parsedRewards = [];
+
+    try {
+      parsedTaskTags = JSON.parse(taskTags || "[]");
+      parsedConstraints = JSON.parse(taskConstraints || "[]");
+      parsedFileTypes = JSON.parse(fileAcceptType || "[]");
+      parsedEvaluators = JSON.parse(evaluators || "[]");
+      parsedRewards = JSON.parse(taskRewards || "[]");
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid JSON format in arrays",
+      });
     }
 
-    // 💾 Create task
+    let taskDocumentURL = null;
+    if (req.file) {
+      taskDocumentURL = req.file.key; 
+    }
+
     const newTask = await TaskSchema.create({
       taskNo: Number(taskNo),
       taskTitle: taskTitle.trim(),
       taskDescription: taskDescription?.trim(),
-      taskSubmissionDeadline: new Date(taskSubmissionDeadline),
-      taskRegistrationDeadline: new Date(taskRegistrationDeadline),
-      taskRegistrationLiveFrom: new Date(taskRegistrationLiveFrom),
+      taskSubmissionDeadline: submissionDeadline,
+      taskRegistrationDeadline: regDeadline,
+      taskRegistrationLiveFrom: regLiveFrom,
       taskRewardType,
       taskRewardNo: Number(taskRewardNo),
-      taskRewards: parsedRewards, 
+      taskRewards: parsedRewards,
       isLive: isLive === "true" || isLive === true,
       taskDocument: taskDocumentURL,
       taskTags: parsedTaskTags,
@@ -180,7 +236,7 @@ const AddTask = async (req, res) => {
       orgScope,
       passKey: passKey.trim(),
       evaluators: parsedEvaluators,
-      taskResultDeadline: new Date(taskResultDeadline),
+      taskResultDeadline: resultDeadline,
       addedBy: userId,
     });
 
@@ -191,7 +247,7 @@ const AddTask = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error in addTask:", error);
+    console.error("Error in AddTask:", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
