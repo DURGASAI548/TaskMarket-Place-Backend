@@ -391,11 +391,11 @@ const GetTaskById = async (req, res) => {
     const task = await TaskSchema.findById(id)
       .populate({
         path: "orgScope",
-        select: "name", 
+        select: "orgName", 
       })
       .populate({
         path: "branchScope",
-        select: "name", 
+        select: "branchName", 
       })
       .populate({
         path: "evaluators",
@@ -403,7 +403,7 @@ const GetTaskById = async (req, res) => {
       })
       .populate({
         path: "taskTags",
-        select: "name"
+        select: "TagName"
       });
 
     if (!task) {
