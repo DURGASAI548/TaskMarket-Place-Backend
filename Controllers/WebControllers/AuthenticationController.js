@@ -24,11 +24,7 @@ const generateOTP = () => {
 };
 
 const transporter = nodemailer.createTransport({
-//   service: "gmail",
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  family: 4,
+  service: "gmail",
   auth: {
     user: "battu2825@gmail.com",
     pass: "ztcg rrwh rfdo uptp",
@@ -77,6 +73,7 @@ const CheckUserAndSendOTP = async (req, res) => {
     user.otpCreatedAt = new Date();
     await user.save();
 
+    console.log("MAIL sending started")
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
@@ -140,7 +137,7 @@ const CheckUserAndSendOTP = async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-
+console.log("MAIL sending completed")
     return res.status(200).json({
       success: true,
       message: "OTP sent to registered email",
