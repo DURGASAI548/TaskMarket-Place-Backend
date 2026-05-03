@@ -389,6 +389,7 @@ const GetTaskById = async (req, res) => {
     const { id } = req.params;
 
     const task = await TaskSchema.findById(id)
+      .select("-passKey")
       .populate({
         path: "orgScope",
         select: "orgName", 
