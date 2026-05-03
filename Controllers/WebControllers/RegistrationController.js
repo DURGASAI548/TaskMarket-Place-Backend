@@ -49,7 +49,7 @@ const RegisterForTask = async (req, res) => {
     }
 
     // ✅ 4. Check organization match
-    if (user.org !== task.orgScope.toString()) {
+    if (user.org.toString() !== task.orgScope.toString()) {
       return res.status(403).json({
         success: false,
         message: "User does not belong to this organization",
@@ -58,7 +58,7 @@ const RegisterForTask = async (req, res) => {
 
     // ✅ 5. Check branch match (only if task has branchScope)
     if (task.branchScope) {
-      if (user.branch !== task.branchScope.toString()) {
+      if (user.branch.toString() !== task.branchScope.toString()) {
         return res.status(403).json({
           success: false,
           message: "User does not belong to this branch",
