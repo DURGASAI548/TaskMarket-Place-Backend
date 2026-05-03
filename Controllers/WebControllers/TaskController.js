@@ -384,6 +384,50 @@ const GetAllTasks = async (req, res) => {
   }
 };
 
+const GetTaskById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const task = await TaskSchema.findById(id)
+      .populate({
+        path: "orgScope",
+        select: "name", 
+      })
+      .populate({
+        path: "branchScope",
+        select: "name", 
+      })
+      .populate({
+        path: "evaluators",
+        select: "name email", 
+      })
+      .populate({
+        path: "taskTags",
+        select: "name"
+      });
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: task,
+    });
+
+  } catch (error) {
+    console.error("Error fetching task:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
 
 
 
@@ -391,3 +435,4 @@ const GetAllTasks = async (req, res) => {
 exports.AddTask = AddTask
 exports.GenerateTaskCredentials = GenerateTaskCredentials
 exports.GetAllTasks = GetAllTasks
+exports.GetTaskById = GetTaskById
