@@ -40,7 +40,6 @@ const RegisterForTask = async (req, res) => {
       });
     }
 
-    // ✅ 3. Check task is live
     if (!task.isLive) {
       return res.status(400).json({
         success: false,
@@ -48,7 +47,6 @@ const RegisterForTask = async (req, res) => {
       });
     }
 
-    // ✅ 4. Check organization match
     if (user.org.toString() !== task.orgScope.toString()) {
       return res.status(403).json({
         success: false,
@@ -56,7 +54,6 @@ const RegisterForTask = async (req, res) => {
       });
     }
 
-    // ✅ 5. Check branch match (only if task has branchScope)
     if (task.branchScope) {
       if (user.branch.toString() !== task.branchScope.toString()) {
         return res.status(403).json({
@@ -66,7 +63,6 @@ const RegisterForTask = async (req, res) => {
       }
     }
 
-    // ✅ 6. Prevent duplicate registration
     const alreadyRegistered = await RegistrationSchema.findOne({
       user: userId,
       task: taskId,
@@ -80,8 +76,8 @@ const RegisterForTask = async (req, res) => {
     }
 
     const registration = await RegistrationSchema.create({
-      user: userId,
-      task: taskId,
+      UserID: userId,
+      TaskID: taskId,
       RegisteredAt: new Date(),
     });
 
