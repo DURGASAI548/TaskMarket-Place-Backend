@@ -15,6 +15,7 @@ const OrganizationRoutes = require("./Routes/WebRoutes/OrganizationRoutes")
 const BranchRoutes = require("./Routes/WebRoutes/BranchRoutes")
 const TagRoutes = require("./Routes/WebRoutes/TagRoutes")
 const TaskRoutes = require("./Routes/WebRoutes/TaskRoutes")
+const RegistrationRoutes = require("./Routes/WebRoutes/RegistrationRoutes")
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
@@ -54,6 +55,8 @@ app.use('/api', OrganizationRoutes);
 app.use('/api', BranchRoutes);
 app.use('/api', TagRoutes);
 app.use('/api', TaskRoutes);
+app.use('/api', RegistrationRoutes);
+
 
 app.get("/", (req, res) => {
   res.status(200).json({
