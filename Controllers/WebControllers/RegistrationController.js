@@ -41,7 +41,7 @@ const RegisterForTask = async (req, res) => {
       _id: taskId,
       evaluators: userId,
     });
-    
+
     if (isEvaluator) {
       return res.status(404).json({
         success: false,
@@ -80,8 +80,8 @@ const RegisterForTask = async (req, res) => {
     }
 
     const alreadyRegistered = await RegistrationSchema.findOne({
-      user: userId,
-      task: taskId,
+      UserID: userId,
+      TaskID: taskId,
     });
 
     if (alreadyRegistered) {
