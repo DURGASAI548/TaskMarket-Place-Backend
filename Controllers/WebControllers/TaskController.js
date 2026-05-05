@@ -212,7 +212,7 @@ const AddTask = async (req, res) => {
 
     let taskDocumentURL = null;
     if (req.file) {
-      taskDocumentURL = req.file.key; 
+      taskDocumentURL = req.file.key;
     }
 
     const newTask = await TaskSchema.create({
@@ -351,7 +351,7 @@ const GetAllTasks = async (req, res) => {
           taskRewardType: 1,
           orgScopeName: "$orgData.orgName",
           branchScopeName: "$branchData.branchName",
-          taskDescription:1,
+          taskDescription: 1,
           taskTags: {
             $map: {
               input: "$tagData",
@@ -387,7 +387,7 @@ const GetAllTasks = async (req, res) => {
 const GetTaskById = async (req, res) => {
   try {
     const { id } = req.params;
-    const  userId  = req.user.id; 
+    const userId = req.user.id;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -416,7 +416,7 @@ const GetTaskById = async (req, res) => {
         UserID: userId,
         TaskID: id,
       });
-      isRegistered = !!registration; 
+      isRegistered = !!registration;
     }
 
     return res.status(200).json({
@@ -436,14 +436,21 @@ const GetTaskById = async (req, res) => {
 };
 
 const GetTaskByIdForEditTask = async (req, res) => {
-   try {
+  try {
     const { id } = req.params;
-    const  userId  = req.user.id; 
+    const userId = req.user.id;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
         message: "Invalid task ID",
+      });
+    }
+    const userDetails = await UserSchema.findById(userID)
+    if (!userDetails || userDetails.userType === "user") {
+      return res.status(404).json({
+        success: false,
+        message: "Not Allowed",
       });
     }
 
@@ -452,6 +459,19 @@ const GetTaskByIdForEditTask = async (req, res) => {
       .populate({ path: "branchScope", select: "branchName" })
       .populate({ path: "evaluators", select: "name email" })
       .populate({ path: "taskTags", select: "TagName" });
+    if (userDetails.userType === "orgAdmin" && (task.orgScope.toString() != userDetails.org.toString())) {
+      return res.status(404).json({
+        success: false,
+        message: "Not Allowed to Edit Task, as it is in different Org",
+      });
+    }
+    if(userDetails.userType === 'branchAdmin' && (task.addedBy.toString() != userId.toString()))
+    {
+      return res.status(404).json({
+        success: false,
+        message: "Not Allowed to Edit Task, as it is in created by someone else",
+      });
+    }
 
     if (!task) {
       return res.status(404).json({
