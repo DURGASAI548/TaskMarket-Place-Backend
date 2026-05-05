@@ -37,6 +37,17 @@ const RegisterForTask = async (req, res) => {
         message: "Admin's Not allowed to Register for task",
       });
     }
+    const isEvaluator = await TaskSchema.findOne({
+      _id: taskId,
+      evaluators: userId,
+    });
+    
+    if (isEvaluator) {
+      return res.status(404).json({
+        success: false,
+        message: "Evaluator Not allowed to Register for task",
+      });
+    }
 
     if (!task) {
       return res.status(404).json({
