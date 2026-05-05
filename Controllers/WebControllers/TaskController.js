@@ -387,25 +387,20 @@ const GetAllTasks = async (req, res) => {
 const GetTaskById = async (req, res) => {
   try {
     const { id } = req.params;
+    const { userId } = req.query; 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid task ID",
+      });
+    }
 
     const task = await TaskSchema.findById(id)
       .select("-passKey")
-      .populate({
-        path: "orgScope",
-        select: "orgName", 
-      })
-      .populate({
-        path: "branchScope",
-        select: "branchName", 
-      })
-      .populate({
-        path: "evaluators",
-        select: "name email", 
-      })
-      .populate({
-        path: "taskTags",
-        select: "TagName"
-      });
+      .populate({ path: "orgScope", select: "orgName" })
+      .populate({ path: "branchScope", select: "branchName" })
+      .populate({ path: "evaluators", select: "name email" })
+      .populate({ path: "taskTags", select: "TagName" });
 
     if (!task) {
       return res.status(404).json({
@@ -414,9 +409,21 @@ const GetTaskById = async (req, res) => {
       });
     }
 
+    let isRegistered = false;
+
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      const registration = await RegistrationSchema.findOne({
+        UserID: userId,
+        TaskID: id,
+      });
+
+      isRegistered = !!registration; 
+    }
+
     return res.status(200).json({
       success: true,
       data: task,
+      isRegistered,
     });
 
   } catch (error) {
@@ -428,7 +435,6 @@ const GetTaskById = async (req, res) => {
     });
   }
 };
-
 
 
 
