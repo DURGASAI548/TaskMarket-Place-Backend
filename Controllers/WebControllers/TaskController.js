@@ -410,7 +410,7 @@ const GetTaskById = async (req, res) => {
     }
 
     let isRegistered = false;
-
+    console.error(userId , mongoose.Types.ObjectId.isValid(userId))
     if (userId && mongoose.Types.ObjectId.isValid(userId)) {
       const registration = await RegistrationSchema.findOne({
         UserID: userId,
