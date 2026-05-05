@@ -20,7 +20,6 @@ const RegisterForTask = async (req, res) => {
       });
     }
 
-    // ✅ 2. Get user & task
     const [user, task] = await Promise.all([
       UserSchema.findById(userId),
       TaskSchema.findById(taskId),
@@ -30,6 +29,12 @@ const RegisterForTask = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "User not found",
+      });
+    }
+    if(user.userType === "superAdmin" || user.userType === "orgAdmin" || user.userType === "branchAdmin"){
+       return res.status(400).json({
+        success: false,
+        message: "Admin's Not allowed to Register for task",
       });
     }
 
