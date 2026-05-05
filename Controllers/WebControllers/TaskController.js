@@ -446,7 +446,7 @@ const GetTaskByIdForEditTask = async (req, res) => {
         message: "Invalid task ID",
       });
     }
-    const userDetails = await UserSchema.findById(userID)
+    const userDetails = await UserSchema.findById(userId)
     if (!userDetails || userDetails.userType === "user") {
       return res.status(404).json({
         success: false,
