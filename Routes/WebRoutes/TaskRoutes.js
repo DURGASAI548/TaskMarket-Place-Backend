@@ -10,5 +10,6 @@ router.post("/add-task",upload.single("taskDocument"),VerifyToken,TaskController
 router.get("/get-task-credentials",VerifyToken,TaskController.GenerateTaskCredentials)
 router.get("/get-tasks",VerifyToken,TaskController.GetAllTasks)
 router.get("/get-task-by-id/:id",VerifyToken,TaskController.GetTaskById)
+router.get("/get-task-by-for-edit-id/:id",VerifyToken,TaskController.GetTaskByIdForEditTask)
 
 module.exports = router

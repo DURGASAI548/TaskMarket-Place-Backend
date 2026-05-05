@@ -388,8 +388,7 @@ const GetTaskById = async (req, res) => {
   try {
     const { id } = req.params;
     const  userId  = req.user.id; 
-    console.log("DATASDFSDFGADSFG")
-    console.log(req.user)
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -412,13 +411,11 @@ const GetTaskById = async (req, res) => {
     }
 
     let isRegistered = false;
-    console.error(userId , mongoose.Types.ObjectId.isValid(userId))
     if (userId && mongoose.Types.ObjectId.isValid(userId)) {
       const registration = await RegistrationSchema.findOne({
         UserID: userId,
         TaskID: id,
       });
-      console.log(registration)
       isRegistered = !!registration; 
     }
 
@@ -438,6 +435,49 @@ const GetTaskById = async (req, res) => {
   }
 };
 
+const GetTaskByIdForEditTask = async (req, res) => {
+   try {
+    const { id } = req.params;
+    const  userId  = req.user.id; 
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid task ID",
+      });
+    }
+
+    const task = await TaskSchema.findById(id)
+      .populate({ path: "orgScope", select: "orgName" })
+      .populate({ path: "branchScope", select: "branchName" })
+      .populate({ path: "evaluators", select: "name email" })
+      .populate({ path: "taskTags", select: "TagName" });
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+
+    return res.status(200).json({
+      success: true,
+      data: task,
+    });
+
+  } catch (error) {
+    console.error("Error fetching task:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+
+
 
 
 
@@ -445,3 +485,4 @@ exports.AddTask = AddTask
 exports.GenerateTaskCredentials = GenerateTaskCredentials
 exports.GetAllTasks = GetAllTasks
 exports.GetTaskById = GetTaskById
+exports.GetTaskByIdForEditTask = GetTaskByIdForEditTask
