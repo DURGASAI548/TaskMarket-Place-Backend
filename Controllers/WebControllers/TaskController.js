@@ -459,6 +459,8 @@ const GetTaskByIdForEditTask = async (req, res) => {
       .populate({ path: "branchScope", select: "branchName" })
       .populate({ path: "evaluators", select: "name email" })
       .populate({ path: "taskTags", select: "TagName" });
+
+    console.log(task)
     if (userDetails.userType === "orgAdmin" && (task.orgScope.toString() != userDetails.org.toString())) {
       return res.status(404).json({
         success: false,
