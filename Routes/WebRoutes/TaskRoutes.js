@@ -11,5 +11,5 @@ router.get("/get-task-credentials",VerifyToken,TaskController.GenerateTaskCreden
 router.get("/get-tasks",VerifyToken,TaskController.GetAllTasks)
 router.get("/get-task-by-id/:id",VerifyToken,TaskController.GetTaskById)
 router.get("/get-task-by-for-edit-id/:id",VerifyToken,TaskController.GetTaskByIdForEditTask)
-
+router.put('/edit-user/:id',upload.single("taskDocument"),VerifyToken,TaskController.EditTask);
 module.exports = router

@@ -6,6 +6,32 @@ const TaskSchema = require("../../Models/task")
 const RegistrationSchema = require("../../Models/registration")
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require("crypto");
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_KEY,
+  },
+});
+
+const deleteFromS3 = async (fileKey) => {
+  try {
+    if (!fileKey) return;
+
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: fileKey, // must be the stored key (profileURL)
+    });
+
+    await s3.send(command);
+
+    console.log("✅ File deleted from S3:", fileKey);
+  } catch (error) {
+    console.error("❌ S3 Delete Error:", error.message);
+    // Do NOT throw → don't break main API
+  }
+};
+
 const generateTaskNo = () => {
   return Math.floor(100000 + Math.random() * 900000);
 };
@@ -498,6 +524,204 @@ const GetTaskByIdForEditTask = async (req, res) => {
   }
 };
 
+const EditTask = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    // ✅ Auth check
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    // ✅ Validate Task ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Task ID",
+      });
+    }
+
+    // ✅ Fetch user & task
+    const [user, task] = await Promise.all([
+      UserSchema.findById(userId),
+      TaskSchema.findById(id),
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (!task) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
+
+    // 🔐 ROLE BASED ACCESS
+
+    if (user.userType === "user") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to edit tasks",
+      });
+    }
+
+    if (user.userType === "orgAdmin") {
+      if (!task.orgScope.equals(user.org)) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only edit tasks in your organization",
+        });
+      }
+    }
+
+    if (user.userType === "branchAdmin") {
+      if (!task.addedBy.equals(user._id)) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only edit tasks created by you",
+        });
+      }
+    }
+
+    // 📥 Extract fields
+    const {
+      taskTitle,
+      taskDescription,
+      taskSubmissionDeadline,
+      taskRegistrationDeadline,
+      taskRegistrationLiveFrom,
+      taskRewardType,
+      taskRewardNo,
+      taskRewards,
+      taskTags,
+      taskConstraints,
+      fileAcceptType,
+      evaluators,
+      isLive,
+      acceptGithubLink,
+      acceptLiveLink,
+      branchScope,
+      orgScope,
+      passKey,
+      taskResultDeadline,
+    } = req.body;
+
+    // 📅 Date validation (only if all provided)
+    if (
+      taskRegistrationLiveFrom &&
+      taskRegistrationDeadline &&
+      taskSubmissionDeadline &&
+      taskResultDeadline
+    ) {
+      const regLiveFrom = new Date(taskRegistrationLiveFrom);
+      const regDeadline = new Date(taskRegistrationDeadline);
+      const submissionDeadline = new Date(taskSubmissionDeadline);
+      const resultDeadline = new Date(taskResultDeadline);
+
+      if (
+        isNaN(regLiveFrom) ||
+        isNaN(regDeadline) ||
+        isNaN(submissionDeadline) ||
+        isNaN(resultDeadline)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date format",
+        });
+      }
+
+      if (
+        !(
+          regLiveFrom < regDeadline &&
+          regDeadline < submissionDeadline &&
+          submissionDeadline < resultDeadline
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date sequence",
+        });
+      }
+
+      task.taskRegistrationLiveFrom = regLiveFrom;
+      task.taskRegistrationDeadline = regDeadline;
+      task.taskSubmissionDeadline = submissionDeadline;
+      task.taskResultDeadline = resultDeadline;
+    }
+
+    // 🧠 Parse JSON arrays safely
+    try {
+      if (taskTags) task.taskTags = JSON.parse(taskTags);
+      if (taskConstraints) task.taskConstraints = JSON.parse(taskConstraints);
+      if (fileAcceptType) task.fileAcceptType = JSON.parse(fileAcceptType);
+      if (evaluators) task.evaluators = JSON.parse(evaluators);
+      if (taskRewards) task.taskRewards = JSON.parse(taskRewards);
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid JSON format in arrays",
+      });
+    }
+
+    // ✏️ Update fields (partial update)
+    if (taskTitle) task.taskTitle = taskTitle.trim();
+    if (taskDescription) task.taskDescription = taskDescription.trim();
+    if (taskRewardType) task.taskRewardType = taskRewardType;
+    if (taskRewardNo) task.taskRewardNo = Number(taskRewardNo);
+
+    if (isLive !== undefined) {
+      task.isLive = isLive === "true" || isLive === true;
+    }
+
+    if (acceptGithubLink !== undefined) {
+      task.acceptGithubLink =
+        acceptGithubLink === "true" || acceptGithubLink === true;
+    }
+
+    if (acceptLiveLink !== undefined) {
+      task.acceptLiveLink =
+        acceptLiveLink === "true" || acceptLiveLink === true;
+    }
+
+    if (branchScope !== undefined) {
+      task.branchScope = branchScope || null;
+    }
+
+    if (orgScope) task.orgScope = orgScope;
+    if (passKey) task.passKey = passKey.trim();
+
+    // 📄 File update with SAFE delete
+    let oldFileKey = task.taskDocument;
+
+    if (req.file) {
+      task.taskDocument = req.file.key;
+    }
+
+    // 👤 Audit
+    task.updatedBy = userId;
+
+    // ✅ Save first
+    await task.save();
+
+    // 🔥 Delete old file AFTER save
+    if (req.file && oldFileKey && oldFileKey !== req.file.key) {
+      await deleteFromS3(oldFileKey);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Task updated successfully",
+      data: task,
+    });
+
+  } catch (error) {
+    console.error("Error in EditTask:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
 
 
 
@@ -508,3 +732,4 @@ exports.GenerateTaskCredentials = GenerateTaskCredentials
 exports.GetAllTasks = GetAllTasks
 exports.GetTaskById = GetTaskById
 exports.GetTaskByIdForEditTask = GetTaskByIdForEditTask
+exports.EditTask = EditTask

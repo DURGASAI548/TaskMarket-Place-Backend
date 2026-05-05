@@ -6,7 +6,6 @@ const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const csv = require("csv-parser");
 const fs = require("fs");
 
-// ✅ S3 Client (same config as your upload)
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -15,7 +14,6 @@ const s3 = new S3Client({
   },
 });
 
-// ✅ S3 Delete Utility
 const deleteFromS3 = async (fileKey) => {
   try {
     if (!fileKey) return;
