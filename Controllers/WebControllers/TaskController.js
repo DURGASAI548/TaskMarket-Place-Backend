@@ -387,7 +387,7 @@ const GetAllTasks = async (req, res) => {
 const GetTaskById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.user?.id; 
+    const  userId  = req.user.id; 
     console.log("DATASDFSDFGADSFG")
     console.log(req.user)
     if (!mongoose.Types.ObjectId.isValid(id)) {
