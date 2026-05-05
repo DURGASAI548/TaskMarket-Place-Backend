@@ -416,7 +416,7 @@ const GetTaskById = async (req, res) => {
         UserID: userId,
         TaskID: id,
       });
-
+      console.log(registration)
       isRegistered = !!registration; 
     }
 
