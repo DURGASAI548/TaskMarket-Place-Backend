@@ -529,12 +529,10 @@ const EditTask = async (req, res) => {
     const userId = req.user?.id;
     const { id } = req.params;
 
-    // ✅ Auth check
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    // ✅ Validate Task ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -542,7 +540,6 @@ const EditTask = async (req, res) => {
       });
     }
 
-    // ✅ Fetch user & task
     const [user, task] = await Promise.all([
       UserSchema.findById(userId),
       TaskSchema.findById(id),
@@ -556,7 +553,6 @@ const EditTask = async (req, res) => {
       return res.status(404).json({ success: false, message: "Task not found" });
     }
 
-    // 🔐 ROLE BASED ACCESS
 
     if (user.userType === "user") {
       return res.status(403).json({
@@ -583,7 +579,6 @@ const EditTask = async (req, res) => {
       }
     }
 
-    // 📥 Extract fields
     const {
       taskTitle,
       taskDescription,
@@ -606,7 +601,6 @@ const EditTask = async (req, res) => {
       taskResultDeadline,
     } = req.body;
 
-    // 📅 Date validation (only if all provided)
     if (
       taskRegistrationLiveFrom &&
       taskRegistrationDeadline &&
@@ -723,6 +717,92 @@ const EditTask = async (req, res) => {
   }
 };
 
+const DeleteTask = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Task ID",
+      });
+    }
+
+    const [user, task] = await Promise.all([
+      UserSchema.findById(userId),
+      TaskSchema.findById(id),
+    ]);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+
+    if (user.userType === "user") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to delete tasks",
+      });
+    }
+
+    if (user.userType === "orgAdmin") {
+      if (!task.orgScope.equals(user.org)) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only delete tasks in your organization",
+        });
+      }
+    }
+
+    if (user.userType === "branchAdmin") {
+      if (!task.addedBy.equals(user._id)) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only delete tasks created by you",
+        });
+      }
+    }
+
+    const fileKey = task.taskDocument;
+
+    await TaskSchema.findByIdAndDelete(id);
+
+    if (fileKey) {
+      await deleteFromS3(fileKey);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Task deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Error in DeleteTask:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
 
 
 
@@ -733,3 +813,4 @@ exports.GetAllTasks = GetAllTasks
 exports.GetTaskById = GetTaskById
 exports.GetTaskByIdForEditTask = GetTaskByIdForEditTask
 exports.EditTask = EditTask
+exports.DeleteTask = DeleteTask

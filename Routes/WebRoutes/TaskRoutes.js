@@ -12,4 +12,5 @@ router.get("/get-tasks",VerifyToken,TaskController.GetAllTasks)
 router.get("/get-task-by-id/:id",VerifyToken,TaskController.GetTaskById)
 router.get("/get-task-by-for-edit-id/:id",VerifyToken,TaskController.GetTaskByIdForEditTask)
 router.put('/edit-task/:id',upload.single("taskDocument"),VerifyToken,TaskController.EditTask);
+router.delete("/task/:id", VerifyToken, TaskController.DeleteTask);
 module.exports = router
