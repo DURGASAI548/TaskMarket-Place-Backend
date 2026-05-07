@@ -16,6 +16,7 @@ const BranchRoutes = require("./Routes/WebRoutes/BranchRoutes")
 const TagRoutes = require("./Routes/WebRoutes/TagRoutes")
 const TaskRoutes = require("./Routes/WebRoutes/TaskRoutes")
 const RegistrationRoutes = require("./Routes/WebRoutes/RegistrationRoutes")
+const EvalutionPointRoutes = require("./Routes/WebRoutes/EvalutionPointRoutes")
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
@@ -56,6 +57,7 @@ app.use('/api', BranchRoutes);
 app.use('/api', TagRoutes);
 app.use('/api', TaskRoutes);
 app.use('/api', RegistrationRoutes);
+app.use('/api', EvalutionPointRoutes);
 
 
 app.get("/", (req, res) => {
