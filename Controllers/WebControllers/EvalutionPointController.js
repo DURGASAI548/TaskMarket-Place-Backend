@@ -40,7 +40,7 @@ const AddEvaluationPoint = async (req, res) => {
 
     const cleanedPoint = EvaluationPoint.trim();
 
-    const existingPoint = await EvaluationPointSchema.findOne({
+    const existingPoint = await EvalutionPointSchema.findOne({
       EvaluationPoint: {
         $regex: `^${cleanedPoint}$`,
         $options: "i",
@@ -54,7 +54,7 @@ const AddEvaluationPoint = async (req, res) => {
       });
     }
 
-    const newPoint = await EvaluationPointSchema.create({
+    const newPoint = await EvalutionPointSchema.create({
       EvaluationPoint: cleanedPoint,
       AddedBy: userId,
     });
@@ -93,7 +93,7 @@ const GetAllEvaluationPoints = async (req, res) => {
         message: "You are not allowed to get evaluation points",
       });
     }
-    const points = await EvaluationPointSchema.find()
+    const points = await EvalutionPointSchema.find()
       .populate({
         path: "AddedBy",
         select: "name email",
@@ -163,7 +163,7 @@ const UpdateEvaluationPoint = async (req, res) => {
       });
     }
 
-    const point = await EvaluationPointSchema.findById(id);
+    const point = await EvalutionPointSchema.findById(id);
 
     if (!point) {
       return res.status(404).json({
@@ -174,7 +174,7 @@ const UpdateEvaluationPoint = async (req, res) => {
 
     const cleanedPoint = EvaluationPoint.trim();
 
-    const existingPoint = await EvaluationPointSchema.findOne({
+    const existingPoint = await EvalutionPointSchema.findOne({
       _id: { $ne: id },
       EvaluationPoint: {
         $regex: `^${cleanedPoint}$`,
