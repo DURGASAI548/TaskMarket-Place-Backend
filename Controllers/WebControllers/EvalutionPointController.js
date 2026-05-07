@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const EvalutionPointSchema = require("../../Models/evalutionPoint")
-const UserSchema = require("../models/user")
+const UserSchema = require("../../Models/user")
 
 const AddEvaluationPoint = async (req, res) => {
   try {
