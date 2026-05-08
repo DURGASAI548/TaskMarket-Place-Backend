@@ -226,6 +226,157 @@ const GetEvaluationPoints = async (req, res) => {
   }
 };
 
+const GetEvaluationMatrix = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await UserSchema.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.userType === "user") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to access evaluation matrix",
+      });
+    }
+
+    let taskMatch = {};
+
+    if (user.userType === "orgAdmin") {
+      taskMatch.orgScope = new mongoose.Types.ObjectId(user.org);
+    }
+
+    if (user.userType === "branchAdmin") {
+      taskMatch.orgScope = new mongoose.Types.ObjectId(user.org);
+      taskMatch.branchScope = new mongoose.Types.ObjectId(user.branch);
+    }
+
+    const matrix = await EvaluationMatrixSchema.aggregate([
+      {
+        $lookup: {
+          from: "tasks",
+          localField: "TaskID",
+          foreignField: "_id",
+          as: "task",
+        },
+      },
+
+      {
+        $unwind: "$task",
+      },
+
+      {
+        $match: taskMatch,
+      },
+
+      {
+        $lookup: {
+          from: "organizations",
+          localField: "task.orgScope",
+          foreignField: "_id",
+          as: "organization",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$organization",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "branches",
+          localField: "task.branchScope",
+          foreignField: "_id",
+          as: "branch",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$branch",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "evaluationpoints",
+          localField: "EvaluationPointID",
+          foreignField: "_id",
+          as: "point",
+        },
+      },
+
+      {
+        $unwind: "$point",
+      },
+
+      {
+        $group: {
+          _id: "$task._id",
+
+          taskTitle: {
+            $first: "$task.taskTitle",
+          },
+
+          orgScope: {
+            $first: "$organization.orgName",
+          },
+
+          branchScope: {
+            $first: "$branch.branchName",
+          },
+
+          evaluationMatrix: {
+            $push: {
+              EvaluationPoint: "$point.EvaluationPoint",
+              EvaluationScore: "$EvaluationScore",
+            },
+          },
+        },
+      },
+
+      {
+        $sort: {
+          taskTitle: 1,
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      count: matrix.length,
+      data: matrix,
+    });
+
+  } catch (error) {
+    console.error("Error in GetEvaluationMatrix:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+
 exports.AddEvaluationMatrix = AddEvaluationMatrix;
 exports.GetTaskNames = GetTaskNames;
 exports.GetEvaluationPoints = GetEvaluationPoints;
+exports.GetEvaluationMatrix = GetEvaluationMatrix;
