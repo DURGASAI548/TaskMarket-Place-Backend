@@ -121,4 +121,111 @@ const AddEvaluationMatrix = async (req, res) => {
   }
 };
 
+const GetTaskNames = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await UserSchema.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.userType === "user") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to access tasks",
+      });
+    }
+
+    let filter = {};
+
+    if (user.userType === "orgAdmin") {
+      filter.orgScope = user.org;
+    }
+
+    if (user.userType === "branchAdmin") {
+      filter.orgScope = user.org;
+      filter.branchScope = user.branch;
+    }
+
+    const tasks = await TaskSchema.find(filter)
+      .select("_id taskTitle")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: tasks.length,
+      data: tasks,
+    });
+
+  } catch (error) {
+    console.error("Error in GetTaskNames:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const GetEvaluationPoints = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await UserSchema.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.userType === "user") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to access evaluation points",
+      });
+    }
+
+    const points = await EvaluationPointSchema.find()
+      .select("_id EvaluationPoint")
+      .sort({ EvaluationPoint: 1 });
+
+    return res.status(200).json({
+      success: true,
+      count: points.length,
+      data: points,
+    });
+
+  } catch (error) {
+    console.error("Error in GetEvaluationPoints:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 exports.AddEvaluationMatrix = AddEvaluationMatrix;
+exports.GetTaskNames = GetTaskNames;
+exports.GetEvaluationPoints = GetEvaluationPoints;
